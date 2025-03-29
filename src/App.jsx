@@ -9,7 +9,7 @@ import TablePile from "./components/cards/TablePile";
 import GameControls from "./components/GameControls"; // Assuming GameControls has styling for the pass button now
 
 const API_URL = 'http://localhost:5000';
-const AI_TURN_DELAY = 3_000; // Milliseconds delay for AI turns (adjust as needed)
+const AI_TURN_DELAY = 500; // Milliseconds delay for AI turns (adjust as needed)
 
 class App extends Component {
   state = {
@@ -23,8 +23,8 @@ class App extends Component {
     humanPlayerId: 'player-0',
     error: null,
     aiTurnTimerId: null,
-     // NEW: Store active player count derived from players state
     activePlayerCount: 0,
+    playerAnimationSwitchboard: {},
   };
 
   componentDidMount() {
@@ -36,8 +36,6 @@ class App extends Component {
           clearTimeout(this.state.aiTurnTimerId);
       }
   }
-
-  // --- API Interaction ---
   fetchApi = async (endpoint, method = 'GET', body = null) => {
     try {
       const options = {
@@ -59,7 +57,9 @@ class App extends Component {
         }
         throw new Error(errorData?.error || errorData?.message || `HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
+      // Check if response is empty before parsing JSON
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : {}; // Handle empty response
       return data;
     } catch (error) {
       console.error("API Error:", error);
@@ -70,7 +70,7 @@ class App extends Component {
           gameMessage: `Error: ${error.message}`,
           aiTurnTimerId: null
       });
-      clearTimeout(this.state.aiTurnTimerId);
+      if (this.state.aiTurnTimerId) clearTimeout(this.state.aiTurnTimerId);
       return null;
     }
   };
@@ -83,7 +83,12 @@ class App extends Component {
 
     if (this.state.aiTurnTimerId) {
         clearTimeout(this.state.aiTurnTimerId);
+        // Setting timerId to null here might be premature if setState below schedules a new one
+        // this.setState({ aiTurnTimerId: null }); // Let the setState callback handle it
     }
+
+    const prevPlayerIndex = this.state.currentPlayerIndex; // Store previous index
+    const prevPlayers = this.state.players; // Store previous players state
 
     const players = gameState.players || [];
     const humanPlayerIndex = players.findIndex(p => p.id === this.state.humanPlayerId);
@@ -91,40 +96,80 @@ class App extends Component {
          players[humanPlayerIndex].hand.sort((a, b) => a.value - b.value);
      }
 
-    // --- NEW: Calculate active player count ---
     // **ASSUMPTION:** Backend adds `isStillInRound: boolean` to each player object.
     // This flag should be true if the player hasn't finished the game AND hasn't passed in the current play sequence.
     const activePlayerCount = players.filter(p => p.isStillInRound === true).length;
-    // -------------------------------------------
+
+    // --- Pass Notification Logic ---
+    let newSwitchboard = { ...this.state.playerAnimationSwitchboard };
+    // Reset previous animations (optional, keeps only one active)
+    Object.keys(newSwitchboard).forEach(key => {
+        newSwitchboard[key] = { ...newSwitchboard[key], isAnimating: false };
+    });
+
+    // Check if the previous player passed
+    // **ASSUMPTION:** The backend indicates a pass, maybe via gameMessage or a specific action field.
+    // We'll check if the previous player exists and is *no longer* the current player,
+    // and if their `isStillInRound` status changed to false (or a specific message exists).
+    const previousPlayer = prevPlayers[prevPlayerIndex];
+    const updatedPreviousPlayer = players[prevPlayerIndex];
+
+    if (previousPlayer && updatedPreviousPlayer && // Ensure player exists in both states
+        prevPlayerIndex !== gameState.currentPlayerIndex && // Ensure turn actually changed
+        previousPlayer.isStillInRound === true && // They were active before
+        updatedPreviousPlayer.isStillInRound === false && // They are not active now
+        updatedPreviousPlayer.hand?.length > 0 // And they still have cards (didn't just finish)
+       ) {
+           console.log(`Player ${prevPlayerIndex} (${previousPlayer.name}) likely passed.`);
+           newSwitchboard[prevPlayerIndex] = { isAnimating: true, content: 'Passed' };
+    }
+    // --- End Pass Notification Logic ---
+
 
     this.setState({
       loading: false,
       gamePhase: gameState.gamePhase || 'playing',
-      players: players, // Use the local `players` variable
-      cardsOnTable: gameState.cardsOnTable || [],
+      players: players,
+      cardsOnTable: gameState.cardsOnTable || [], // Assume this is the full pile now
       currentPlayerIndex: gameState.currentPlayerIndex ?? -1,
       gameMessage: gameState.gameMessage || '',
-      selectedCards: [],
+      selectedCards: [], // Clear selection after action
       humanPlayerId: gameState.humanPlayerId || this.state.humanPlayerId,
       error: null,
-      aiTurnTimerId: null,
-      activePlayerCount: activePlayerCount, // Update the count in state
+      aiTurnTimerId: null, // Reset timer ID initially
+      activePlayerCount: activePlayerCount,
+      playerAnimationSwitchboard: newSwitchboard, // Update animation state
     }, () => {
+        // Schedule AI turn in the callback AFTER state is updated
         const { gamePhase, players, currentPlayerIndex, humanPlayerId } = this.state;
         if (gamePhase === 'playing' && currentPlayerIndex !== -1) {
             const currentPlayer = players[currentPlayerIndex];
-            if (currentPlayer && currentPlayer.id !== humanPlayerId) {
+            // Check if it's AI's turn AND they are still in the round
+            if (currentPlayer && currentPlayer.id !== humanPlayerId && currentPlayer.isStillInRound) {
                 console.log(`Scheduling AI turn for Player ${currentPlayerIndex} (ID: ${currentPlayer.id}) in ${AI_TURN_DELAY}ms`);
                 const timerId = setTimeout(this.triggerAiTurn, AI_TURN_DELAY);
-                this.setState({ aiTurnTimerId: timerId });
+                // Use functional setState to safely update timerId without race conditions
+                this.setState(prevState => ({ ...prevState, aiTurnTimerId: timerId }));
             } else {
-                 console.log("Next turn is Human or game not playing.");
+                 console.log("Next turn is Human, AI has passed/finished, or game not playing.");
             }
         } else {
              console.log(`Game phase is ${gamePhase}, not scheduling AI turn.`);
         }
     });
   };
+
+  // --- NEW: Handler for animation end ---
+  handleEndTransition = (playerIndex) => {
+    this.setState(prevState => {
+        const newSwitchboard = { ...prevState.playerAnimationSwitchboard };
+        if (newSwitchboard[playerIndex]) {
+            newSwitchboard[playerIndex] = { ...newSwitchboard[playerIndex], isAnimating: false };
+        }
+        return { playerAnimationSwitchboard: newSwitchboard };
+    });
+  };
+
 
   // --- Game Lifecycle ---
   startGame = async () => {
@@ -289,17 +334,43 @@ class App extends Component {
       />
     );
   };
+  renderPlayers = () => {
+    const { players, currentPlayerIndex, selectedCards, gamePhase, humanPlayerId, loading, playerAnimationSwitchboard } = this.state;
+    if (!players || players.length === 0) return null;
 
+    return players.map((player, index) => (
+      <Player
+        key={player.id || `player-${index}`}
+        arrayIndex={index}
+        player={{
+            ...player,
+            hand: player.hand || [],
+            isHuman: player.id === humanPlayerId
+        }}
+        isCurrentPlayer={index === currentPlayerIndex && gamePhase === 'playing'}
+        // Pass the new prop - **ASSUMES backend provides player.isStillInRound**
+        isStillInRound={player.isStillInRound === true}
+        onCardClick={this.handleCardClick}
+        selectedCards={player.id === humanPlayerId ? selectedCards : []}
+        disabled={!(index === currentPlayerIndex && player.id === humanPlayerId && gamePhase === 'playing' && !loading)}
+        // Pass animation state and handler
+        playerAnimationSwitchboard={playerAnimationSwitchboard}
+        endTransition={this.handleEndTransition}
+      />
+    ));
+  };
+
+  // ... (renderGameControls, render - unchanged structure, but Player rendering is updated) ...
+
+  // Make sure render passes the necessary props down if they weren't already
   render() {
-    const { loading, gamePhase, cardsOnTable, gameMessage, error, players, activePlayerCount } = this.state; // Added activePlayerCount
-    const totalPlayerCount = players.length; // Get total players for display
+    const { loading, gamePhase, cardsOnTable, gameMessage, error, players, activePlayerCount } = this.state;
+    const totalPlayerCount = players.length;
 
-     // Initial loading screen
      if (gamePhase === 'loading' && loading && !players.length) {
         return <Spinner />;
      }
 
-    // Error screen
     if (gamePhase === 'error') {
         return (
             <div className="App">
@@ -316,7 +387,6 @@ class App extends Component {
         );
     }
 
-    // Round/Game Over screen
     if (gamePhase === 'roundOver' || gamePhase === 'gameOver') {
         const rankedPlayers = [...players].sort((a, b) => (a.finishedRank ?? 999) - (b.finishedRank ?? 999));
         const isRoundOver = gamePhase === 'roundOver';
@@ -349,30 +419,28 @@ class App extends Component {
         );
     }
 
-    // Main Game View
     return (
       <div className="App">
         <div className='poker-table--wrapper'>
            {loading && <div className="loading-overlay"><Spinner /></div>}
           <div className="poker-table--container" style={{ filter: loading ? 'blur(2px)' : 'none', transition: 'filter 0.2s ease-out' }}>
 
+            {/* RenderPlayers now passes the needed props */}
             {this.renderPlayers()}
 
             <div className='community-card-container' style={{ top: 'calc(50% - 35px)', height: '70px', display: 'flex', justifyContent: 'center', alignItems: 'center', pointerEvents: 'none' }}>
+              {/* TablePile assumes backend sends full pile */}
               <TablePile cardsOnTable={cardsOnTable} />
             </div>
 
-            {/* --- MODIFIED Game Message Container --- */}
             <div className='game-message-container' style={{ position: 'absolute', top: '20px', left: '50%', transform: 'translateX(-50%)', color: 'white', backgroundColor: 'rgba(0,0,0,0.7)', padding: '8px 15px', borderRadius: '5px', zIndex: 50, textAlign: 'center', minWidth: '250px' }}>
               <div>{gameMessage}</div>
-              {/* Display active player count only during the 'playing' phase and if players exist */}
               {gamePhase === 'playing' && totalPlayerCount > 0 && (
                 <div style={{ fontSize: '0.9em', marginTop: '4px', opacity: 0.9 }}>
                   {activePlayerCount} / {totalPlayerCount} players active in round
                 </div>
               )}
             </div>
-            {/* --- END MODIFICATION --- */}
 
           </div>
 
@@ -384,6 +452,5 @@ class App extends Component {
     );
   }
 }
-
 
 export default App;

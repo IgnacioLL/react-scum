@@ -87,7 +87,7 @@ img {
 
 .player-info--card-count {
     position: absolute;
-    bottom: -30px; /* Position it below the name */
+    bottom: 50px; /* Position it below the name */
     left: 50%;
     transform: translateX(-50%);
     color: white;
@@ -98,6 +98,46 @@ img {
     border-radius: 3px;
     white-space: nowrap; /* Prevent wrapping */
 }
+
+/* Style for players still active in the current round/trick */
+.player-entity--wrapper.active-in-round {
+	background-color: rgba(0, 100, 0, 0.2); /* Subtle green tint */
+	border: 2px solid rgba(200, 255, 200, 0.5); 
+  }
+  
+/* Make non-active players dimmer (alternative to highlighting active ones) */
+.player-entity--wrapper:not(.active-in-round) {
+	opacity: 0.75; /* Make players who passed or finished dimmer */
+	transition: opacity 0.3s ease-in-out;
+}
+/* Ensure current player is fully opaque even if not technically 'active' (e.g., start of trick) */
+.player-entity--wrapper.current-player-turn {
+	opacity: 1;
+}
+  
+/* Ensure the notification box appears above potentially dimmed players */
+.actionBox {
+	/* background: rgba(0,0,0,0.85); */
+	color: yellow;
+	text-shadow: 2px 2px 10px rgba(0,0,0,1);
+	padding: 12px;
+	border-radius: 5px; /* Optional: rounded corners */
+	font-weight: bold; /* Make text bolder */
+
+	position: absolute;
+	top: -35px; /* Adjust vertical position */
+	width: auto; /* Fit content */
+	min-width: 80px; /* Minimum width */
+	white-space: nowrap; /* Prevent wrapping */
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 100; /* Ensure it's above cards/player info */
+	display: none; /* Initially hidden */
+	justify-content: center;
+	pointer-events: none; /* Prevent interaction */
+}
+  
+
 
 .playing-card {
 	display: flex;

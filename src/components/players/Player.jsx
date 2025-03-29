@@ -1,17 +1,18 @@
 // ./components/players/Player.jsx
 import React from 'react';
 import Card from '../cards/Card';
-import HiddenCard from '../cards/HiddenCard'; // Import HiddenCard
-import PlayerStatusNotificationBox from "./PlayerStatusNotificationBox";
+import HiddenCard from '../cards/HiddenCard';
+import PlayerStatusNotificationBox from "./PlayerStatusNotificationBox"; // Ensure this is imported
 
 const Player = (props) => {
   const {
     player,
     isCurrentPlayer,
+    isStillInRound, // NEW: Prop to indicate if player is active in the current trick/round
     onCardClick,
     selectedCards,
-    playerAnimationSwitchboard,
-    endTransition,
+    playerAnimationSwitchboard, // For 'Passed' notification
+    endTransition,             // For 'Passed' notification
     arrayIndex
   } = props;
 
@@ -20,7 +21,8 @@ const Player = (props) => {
   const { name, hand, isHuman, avatarURL } = player;
 
   const renderPlayerCards = () => {
-    if (!hand) return null;
+    // ... (card rendering logic remains the same) ...
+     if (!hand) return null;
 
     const numCards = hand.length;
     const maxRotation = 45; // Max angle for the fan (degrees)
@@ -38,7 +40,7 @@ const Player = (props) => {
       const yOffset = baseYOffset - (arcFactor * 1.5); // Adjust multiplier for more/less arc
       // Adjust X offset for horizontal spread
       const xOffset = (index - centerIndex) * (cardWidth * 0.8); // Increased multiplier
-      
+
       const cardStyle = {
         position: 'absolute',
         zIndex: index, // Cards in middle overlap outer ones
@@ -51,7 +53,7 @@ const Player = (props) => {
       if (!isHuman) {
         // Render HiddenCard for non-human players
         return (
-          <div key={card.id} style={cardStyle}>
+          <div key={card.id || `hidden-${index}`} style={cardStyle}> {/* Added fallback key */}
             <HiddenCard
               cardData={card} // Pass card data even if not fully used visually
               applyFoldedClassname={false}
@@ -74,36 +76,45 @@ const Player = (props) => {
     });
   };
 
+  // Check if the specific player has an active animation
   const ifAnimating = (playerBoxIndex) => {
     return playerAnimationSwitchboard && playerAnimationSwitchboard[playerBoxIndex]?.isAnimating;
   }
 
+  // Add 'active-in-round' class if the player is still playing in this sequence
+  const activeRoundClass = isStillInRound ? ' active-in-round' : '';
+  // Add 'current-player-turn' class if it's their turn
+  const currentPlayerClass = isCurrentPlayer ? ' current-player-turn' : '';
+
+
   return (
-    <div className={`player-entity--wrapper p${arrayIndex}`}>
+    // Add the activeRoundClass here
+    <div className={`player-entity--wrapper p${arrayIndex}${activeRoundClass}${currentPlayerClass}`}>
+      {/* Player Status Notification (for 'Passed') */}
       {playerAnimationSwitchboard && endTransition &&
         <PlayerStatusNotificationBox
           index={arrayIndex}
           isActive={ifAnimating(arrayIndex)}
           content={playerAnimationSwitchboard[arrayIndex]?.content || ''}
-          endTransition={endTransition}
+          endTransition={endTransition} // Pass the handler down
         />
       }
       {/* Container for the fanned cards */}
-      <div className='abscard player-hand-container'> {/* Added class */}
+      <div className='abscard player-hand-container'>
         {renderPlayerCards()}
       </div>
       {/* Player Info */}
       <div className="player-entity--container">
         <div className="player-avatar--container">
           {avatarURL && <img
+            // Use isCurrentPlayer for the avatar border highlight
             className={`player-avatar--image${(isCurrentPlayer ? ' activePlayer' : '')}`}
             src={avatarURL}
             alt="Player Avatar"
           />}
-          <h5 className="player-info--name"> {/* Removed inline style, control via CSS */}
+          <h5 className="player-info--name">
             {name}
           </h5>
-          {/* Card count is now positioned via CSS */}
           <div className="player-info--card-count">
             Cards: {hand ? hand.length : 0}
           </div>
