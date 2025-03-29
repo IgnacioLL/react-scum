@@ -103,4 +103,4 @@ const beginNextRound = (state) => {
 
 // NEED INITIAL PLAYER STATE
 // INITIAL TABLE STATE
-export { generateTable, handleOverflowIndex, determineNextActivePlayer, beginNextRound, checkWin }
+export { generateTable, handleOverflowIndex, determineNextActivePlayer, beginNextRound }

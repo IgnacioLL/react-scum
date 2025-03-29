@@ -446,7 +446,522 @@ FILE PATH: ./logo.svg
 
 
 
-FILE PATH: ./Poker.css
+FILE PATH: ./utils/players.js
+----------------------------
+import uuid from 'uuid/v1';
+import { dealMissingCommunityCards, generateDeckOfCards, shuffle } from './cards.js';
+
+const axios = require('axios')
+// TODO Generate UUID to simulate User ID and really get a perf match on binding to players when determining winnings
+const generateTable = async () => {
+	const users = [{
+		id: uuid(),
+		name: 'Player 1',
+		avatarURL: '/assets/boy.svg',
+		cards: [],
+		bet: 0,
+		betReconciled: false,
+		folded: false,
+		canRaise: true,
+		stackInvestment: 0,
+		robot: false
+	}];
+
+	const response = await axios.get(`https://randomuser.me/api/?results=4&nat=us,gb,fr`);
+	response.data.results
+		.map(user => {
+			return ({
+				id: uuid(),
+				name: `${user.name.first.charAt(0).toUpperCase()}${user.name.first.slice(1)} ${user.name.last.charAt(0).toUpperCase()}${user.name.last.slice(1)}`,
+				avatarURL: user.picture.large,
+				cards: [],
+				bet: 0,
+				betReconciled: false,
+				folded: false,
+				robot: true,
+				canRaise: true,
+				stackInvestment: 0,
+			})
+		})
+		.forEach(user => users.push(user))
+
+	return users
+}
+
+const handleOverflowIndex = (currentIndex, incrementBy, arrayLength, direction) => {
+	switch (direction) {
+		case('up'): {
+			return (
+				(currentIndex + incrementBy) % arrayLength
+			)
+		}
+		case('down'): {
+			return (
+				((currentIndex - incrementBy) % arrayLength) + arrayLength 
+			)
+		}
+		default: throw Error("Attempted to overfow index on unfamiliar direction");
+	}
+}
+
+
+
+// This function can lead to errors if player all ins at a certain position
+// final AI will freeze
+// seems to happen when only 2 players left and someone has all-in
+
+const determineNextActivePlayer = (state) => {
+	state.activePlayerIndex = handleOverflowIndex(state.activePlayerIndex, 1, state.players.length, 'up');
+	const activePlayer = state.players[state.activePlayerIndex];
+
+	if (activePlayer.folded) {
+		console.log("Current player index is folded, going to next active player.")
+		return determineNextActivePlayer(state);
+	}
+
+	if (
+		!activePlayer.folded &&
+		activePlayer.betReconciled
+	) {
+		return(showDown(reconcilePot(dealMissingCommunityCards(state))));
+	}
+
+	// IF a player is all in, he will be reconciled?
+	if (activePlayer.betReconciled) {
+		console.log("Player is reconciled with pot, round betting cycle complete, proceed to next round.")
+		return handlePhaseShift(state);
+	}
+
+	return state
+}
+
+const beginNextRound = (state) => {
+	state.communityCards = [];
+	state.sidePots = [];
+	state.playerHierarchy = [];
+	state.showDownMessages = [];
+	state.deck = shuffle(generateDeckOfCards())
+	state.highBet = 20;
+	state.betInputValue = 20;
+	state.minBet = 20; // can export out to initialState
+	// Unmount all cards so react can re-trigger animations
+	const { players } = state;
+	const clearPlayerCards = players.map(player => ({...player, cards: player.cards.map(card => {})}))
+	state.players = clearPlayerCards;
+	return passDealerChip(state)
+}
+
+// NEED INITIAL PLAYER STATE
+// INITIAL TABLE STATE
+export { generateTable, handleOverflowIndex, determineNextActivePlayer, beginNextRound, checkWin }
+
+
+FILE PATH: ./utils/cards.js
+----------------------------
+import { handleOverflowIndex } from './players.js';
+
+const totalNumCards = 52;
+const suits = ['Heart', 'Spade', 'Club', 'Diamond'];
+const cards = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+const VALUE_MAP = {
+	2:1,
+	3:2,
+	4:3,
+	5:4,
+	6:5,
+	7:6,
+	8:7,
+	9:8,
+	10:9,
+	J:10,
+	Q:11,
+	K:12,
+	A:13,
+};
+
+const randomizePosition = (min, max) => {
+	min = Math.ceil(min);
+  	max = Math.floor(max);
+	return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+
+const generateDeckOfCards = () => {
+	const deck = [];
+
+	for (let suit of suits) {
+		for (let card of cards) {
+			deck.push({
+				cardFace: card,
+				suit: suit,
+				value: VALUE_MAP[card]
+			})
+		}
+	}
+		return deck
+}
+
+const shuffle = (deck) => {
+	let shuffledDeck = new Array(totalNumCards);
+	let filledSlots = [];
+	for (let i = 0; i < totalNumCards; i++) {
+		if (i === 51) {
+			// Fill last undefined slot when only 1 card left to shuffle
+			const lastSlot = shuffledDeck.findIndex((el) => typeof el == 'undefined');
+				shuffledDeck[lastSlot] = deck[i];
+				filledSlots.push(lastSlot);
+		} else {
+			let shuffleToPosition = randomizePosition(0, totalNumCards - 1);
+				while (filledSlots.includes(shuffleToPosition)) {
+					shuffleToPosition = randomizePosition(0, totalNumCards - 1);
+				}
+						shuffledDeck[shuffleToPosition] = deck[i];
+						filledSlots.push(shuffleToPosition);
+		}
+	}
+	return shuffledDeck
+}
+
+const popCards = (deck, numToPop) => {
+	// Note: While this is a Shallow Copy, (It copies the references to the children) - note that we are mutating it by 
+	// Actually modifying the array, NOT the children. This is why the length of mutableCopy changes, but that of deck 
+	// Does not.
+	const mutableDeckCopy = [...deck];
+	let chosenCards;
+	if (numToPop === 1) {
+		chosenCards = mutableDeckCopy.pop();
+	} else {
+		chosenCards = [];
+		for(let i = 0; i < numToPop; i++) {
+			chosenCards.push(mutableDeckCopy.pop());
+		}
+	}
+		return { mutableDeckCopy, chosenCards }
+}
+
+const popShowdownCards = (deck, numToPop) => {
+	// When dealMissingCommunityCards was calling popCards() with the condition numToPop === 1
+	// It was returning a raw object instead of an array, and calling a for...of loop, causing the program to crash
+	// Until we can refactor this code and all of its calling functions 
+	// (change the code for dealFlop/River/Turn to use a consistent .concat function instead of .push())
+	// We'll just duplicat this code here and utilize it in dealMissingCommunityCards
+	const mutableDeckCopy = [...deck];
+	let chosenCards;
+	if (numToPop === 1) {
+		chosenCards = [mutableDeckCopy.pop()];
+	} else {
+		chosenCards = [];
+		for(let i = 0; i < numToPop; i++) {
+			chosenCards.push(mutableDeckCopy.pop());
+		}
+	}
+		return { mutableDeckCopy, chosenCards }
+}
+
+const dealPrivateCards = (state) => {
+		// Clear any "clear cards" flag if it exists
+		state.clearCards = false;
+		let animationDelay = 0;
+		
+		// Continue dealing until the deck is empty
+		while (state.deck.length > 0) {
+		  // Pop a single card from the deck
+		  const { mutableDeckCopy, chosenCards } = popCards(state.deck, 1);
+		  
+		  // Add animation delay (similar to your dealPrivateCards function)
+		  chosenCards.animationDelay = animationDelay;
+		  animationDelay = animationDelay + 250;
+		  
+		  // Add the card to the current active player's hand
+		  state.players[state.activePlayerIndex].cards.push(chosenCards);
+		  
+		  // Update the deck
+		  state.deck = [...mutableDeckCopy];
+		  
+		  // Move to the next player
+		  state.activePlayerIndex = handleOverflowIndex(state.activePlayerIndex, 1, state.players.length, 'up');
+		}
+		
+		// Move to the next phase after all cards are dealt
+		state.phase = 'allCardsDealt';
+		
+		return state;
+};
+
+
+const buildValueSet = (hand) => {
+	return Array.from(new Set(hand.map(cardInfo => cardInfo.value)))
+}
+
+const dealMissingCommunityCards = (state) => {
+	const cardsToPop = 5 - state.communityCards.length
+	if (cardsToPop >= 1) {
+		let animationDelay = 0;
+		const { mutableDeckCopy, chosenCards } = popShowdownCards(state.deck, cardsToPop);
+			
+			for (let card of chosenCards) {
+				card.animationDelay = animationDelay;
+				animationDelay = animationDelay + 250;
+				state.communityCards.push(card);
+			}
+
+		state.deck = mutableDeckCopy;
+	}
+	state.phase = 'showdown'
+	return state
+}
+
+// Add these functions to your existing utils/cards.js file
+
+
+const throwCardsToTable = (cardsToThrow, playerId, gameState) => {
+	// Create a copy of the game state to modify
+	const newGameState = { ...gameState };
+	
+	// Add the thrown cards to the table
+	newGameState.cardsOnTable = [
+	  ...cardsToThrow.map(card => ({
+		...card,
+		playedBy: playerId,
+		animationDelay: Math.random() * 200 // Randomize animation for natural look
+	  }))
+	];
+	
+	// Update the player's hand by removing the thrown cards
+	const playerIndex = newGameState.players.findIndex(player => player.name === playerId);
+	if (playerIndex >= 0) {
+	  // Filter out the cards that were thrown
+	  newGameState.players[playerIndex].cards = newGameState.players[playerIndex].cards.filter(
+		playerCard => !cardsToThrow.some(
+		  thrownCard => thrownCard.suit === playerCard.suit && thrownCard.cardFace === playerCard.cardFace
+		)
+	  );
+	}
+	
+	return newGameState;
+  };
+  
+
+const clearTableCards = (gameState) => {
+	return {
+	  ...gameState,
+	  cardsOnTable: []
+	};
+  };
+
+export { generateDeckOfCards, shuffle, popCards, dealPrivateCards, dealMissingCommunityCards, buildValueSet, throwCardsToTable, clearTableCards }
+
+
+FILE PATH: ./utils/ui.js
+----------------------------
+const renderUnicodeSuitSymbol = (suit) => {
+	switch(suit) {
+		case('Heart'): return '\u2665';
+		case('Diamond'): return '\u2666';
+		case('Spade'): return '\u2660';
+		case('Club'): return '\u2663';
+		default: throw Error('Unfamiliar String Recieved in Suit Unicode Generation');
+	}
+}
+
+
+export { 
+	renderUnicodeSuitSymbol, 
+}
+
+
+
+
+FILE PATH: ./utils/scumLogic.js
+----------------------------
+// utils/scumLogic.js
+
+const SUITS = ['Heart', 'Spade', 'Club', 'Diamond'];
+const FACES = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'];
+
+// Assign numerical values for comparison (3 is lowest, 2 is highest)
+const VALUE_MAP = FACES.reduce((map, face, index) => {
+  map[face] = index + 1; // 3=1, 4=2, ..., A=12, 2=13
+  return map;
+}, {});
+
+/**
+ * Generates a standard 52-card deck for Scum.
+ */
+export const generateDeck = () => {
+  const deck = [];
+  for (const suit of SUITS) {
+    for (const face of FACES) {
+      deck.push({
+        cardFace: face,
+        suit: suit,
+        value: VALUE_MAP[face],
+        id: `${face}-${suit}` // Unique ID for React keys
+      });
+    }
+  }
+  return deck;
+};
+
+/**
+ * Shuffles a deck of cards using the Fisher-Yates algorithm.
+ */
+export const shuffleDeck = (deck) => {
+  let shuffledDeck = [...deck]; // Create a copy
+  for (let i = shuffledDeck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffledDeck[i], shuffledDeck[j]] = [shuffledDeck[j], shuffledDeck[i]]; // Swap elements
+  }
+  return shuffledDeck;
+};
+
+/**
+ * Deals cards from the deck to players.
+ * Returns the updated players array and the remaining deck.
+ */
+export const dealCards = (deck, players) => {
+  let currentDeck = [...deck];
+  const numPlayers = players.length;
+  const updatedPlayers = players.map(p => ({ ...p, hand: [] })); // Clear hands first
+  let playerIndex = 0;
+
+  while (currentDeck.length > 0) {
+    const card = currentDeck.pop();
+    // Add animation delay if needed (optional)
+    card.animationDelay = playerIndex * 50 + updatedPlayers[playerIndex % numPlayers].hand.length * 20;
+    updatedPlayers[playerIndex % numPlayers].hand.push(card);
+    playerIndex++;
+  }
+
+  // Sort each player's hand for better display
+  updatedPlayers.forEach(player => {
+    player.hand.sort((a, b) => a.value - b.value);
+  });
+
+  return { updatedPlayers, remainingDeck: currentDeck };
+};
+
+/**
+ * Gets the Scum value of a card.
+ */
+export const getCardValue = (card) => {
+  return card.value;
+};
+
+/**
+ * Checks if a proposed play is valid according to Scum rules.
+ *
+ * @param {Array} selectedCards - The cards the player wants to play.
+ * @param {Array} cardsOnTable - The cards currently in the pile/trick.
+ * @returns {Boolean|String} - True if valid, or a string message if invalid.
+ */
+export const isValidPlay = (selectedCards, cardsOnTable) => {
+  if (!selectedCards || selectedCards.length === 0) {
+    return "No cards selected.";
+  }
+
+  // Check if all selected cards have the same face value
+  const firstCardValue = selectedCards[0].value;
+  if (!selectedCards.every(card => card.value === firstCardValue)) {
+    return "Selected cards must have the same rank.";
+  }
+
+  const numSelected = selectedCards.length;
+
+  // --- Playing onto an empty table ---
+  if (!cardsOnTable || cardsOnTable.length === 0) {
+    // Any single, double, triple, or quad is valid to start
+    if (numSelected >= 1 && numSelected <= 4) {
+      return true; // Valid lead play
+    } else {
+      return "Invalid number of cards to lead.";
+    }
+  }
+
+  // --- Playing onto existing cards ---
+  const numOnTable = cardsOnTable.length;
+  const tableValue = cardsOnTable[0].value;
+
+  // Must play the same number of cards
+  if (numSelected !== numOnTable) {
+    return `Must play ${numOnTable} card(s).`;
+  }
+
+  // Must play a higher rank
+  if (firstCardValue <= tableValue) {
+    return "Must play a higher rank.";
+  }
+
+  // If all checks pass
+  return true;
+};
+
+/**
+ * Finds the index of the next player who hasn't finished.
+ */
+export const findNextPlayerIndex = (currentIndex, players) => {
+    let nextIndex = (currentIndex + 1) % players.length;
+    let attempts = 0;
+    // Keep looping until we find a player with cards, or we've checked everyone
+    while (players[nextIndex].hand.length === 0 && attempts < players.length) {
+        nextIndex = (nextIndex + 1) % players.length;
+        attempts++;
+    }
+    // If all players are finished (attempts === players.length), return -1 or handle game over
+    if (attempts === players.length) return -1; // Or handle appropriately
+    return nextIndex;
+};
+
+
+/**
+ * Finds all valid plays a player can make given their hand and the cards on table.
+ *
+ * @param {Array} hand - The player's hand.
+ * @param {Array} cardsOnTable - The cards currently on the table.
+ * @returns {Array} - An array of valid plays (each play is an array of cards).
+ */
+export const findValidPlays = (hand, cardsOnTable) => {
+    const validPlays = [];
+    if (!hand || hand.length === 0) {
+      return validPlays; // No cards, no plays
+    }
+  
+    // Group hand by card value
+    const cardsByValue = hand.reduce((groups, card) => {
+      const value = card.value;
+      if (!groups[value]) {
+        groups[value] = [];
+      }
+      groups[value].push(card);
+      return groups;
+    }, {});
+  
+    // Check potential plays (singles, doubles, triples, quads)
+    for (const value in cardsByValue) {
+      const group = cardsByValue[value];
+      // Check singles
+      if (isValidPlay([group[0]], cardsOnTable) === true) {
+        validPlays.push([group[0]]);
+      }
+      // Check doubles
+      if (group.length >= 2 && isValidPlay(group.slice(0, 2), cardsOnTable) === true) {
+        validPlays.push(group.slice(0, 2));
+      }
+      // Check triples
+      if (group.length >= 3 && isValidPlay(group.slice(0, 3), cardsOnTable) === true) {
+        validPlays.push(group.slice(0, 3));
+      }
+      // Check quads
+      if (group.length >= 4 && isValidPlay(group.slice(0, 4), cardsOnTable) === true) {
+        validPlays.push(group.slice(0, 4));
+      }
+    }
+  
+    return validPlays;
+  };
+
+
+FILE PATH: ./Scum.css
 ----------------------------
 html,
 body, 
@@ -1077,521 +1592,6 @@ img {
 
 
 
-FILE PATH: ./utils/players.js
-----------------------------
-import uuid from 'uuid/v1';
-import { dealMissingCommunityCards, generateDeckOfCards, shuffle } from './cards.js';
-
-const axios = require('axios')
-// TODO Generate UUID to simulate User ID and really get a perf match on binding to players when determining winnings
-const generateTable = async () => {
-	const users = [{
-		id: uuid(),
-		name: 'Player 1',
-		avatarURL: '/assets/boy.svg',
-		cards: [],
-		bet: 0,
-		betReconciled: false,
-		folded: false,
-		canRaise: true,
-		stackInvestment: 0,
-		robot: false
-	}];
-
-	const response = await axios.get(`https://randomuser.me/api/?results=4&nat=us,gb,fr`);
-	response.data.results
-		.map(user => {
-			return ({
-				id: uuid(),
-				name: `${user.name.first.charAt(0).toUpperCase()}${user.name.first.slice(1)} ${user.name.last.charAt(0).toUpperCase()}${user.name.last.slice(1)}`,
-				avatarURL: user.picture.large,
-				cards: [],
-				bet: 0,
-				betReconciled: false,
-				folded: false,
-				robot: true,
-				canRaise: true,
-				stackInvestment: 0,
-			})
-		})
-		.forEach(user => users.push(user))
-
-	return users
-}
-
-const handleOverflowIndex = (currentIndex, incrementBy, arrayLength, direction) => {
-	switch (direction) {
-		case('up'): {
-			return (
-				(currentIndex + incrementBy) % arrayLength
-			)
-		}
-		case('down'): {
-			return (
-				((currentIndex - incrementBy) % arrayLength) + arrayLength 
-			)
-		}
-		default: throw Error("Attempted to overfow index on unfamiliar direction");
-	}
-}
-
-
-
-// This function can lead to errors if player all ins at a certain position
-// final AI will freeze
-// seems to happen when only 2 players left and someone has all-in
-
-const determineNextActivePlayer = (state) => {
-	state.activePlayerIndex = handleOverflowIndex(state.activePlayerIndex, 1, state.players.length, 'up');
-	const activePlayer = state.players[state.activePlayerIndex];
-
-	if (activePlayer.folded) {
-		console.log("Current player index is folded, going to next active player.")
-		return determineNextActivePlayer(state);
-	}
-
-	if (
-		!activePlayer.folded &&
-		activePlayer.betReconciled
-	) {
-		return(showDown(reconcilePot(dealMissingCommunityCards(state))));
-	}
-
-	// IF a player is all in, he will be reconciled?
-	if (activePlayer.betReconciled) {
-		console.log("Player is reconciled with pot, round betting cycle complete, proceed to next round.")
-		return handlePhaseShift(state);
-	}
-
-	return state
-}
-
-const beginNextRound = (state) => {
-	state.communityCards = [];
-	state.sidePots = [];
-	state.playerHierarchy = [];
-	state.showDownMessages = [];
-	state.deck = shuffle(generateDeckOfCards())
-	state.highBet = 20;
-	state.betInputValue = 20;
-	state.minBet = 20; // can export out to initialState
-	// Unmount all cards so react can re-trigger animations
-	const { players } = state;
-	const clearPlayerCards = players.map(player => ({...player, cards: player.cards.map(card => {})}))
-	state.players = clearPlayerCards;
-	return passDealerChip(state)
-}
-
-// NEED INITIAL PLAYER STATE
-// INITIAL TABLE STATE
-export { generateTable, handleOverflowIndex, determineNextActivePlayer, beginNextRound, checkWin }
-
-
-FILE PATH: ./utils/cards.js
-----------------------------
-import { handleOverflowIndex } from './players.js';
-
-const totalNumCards = 52;
-const suits = ['Heart', 'Spade', 'Club', 'Diamond'];
-const cards = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-const VALUE_MAP = {
-	2:1,
-	3:2,
-	4:3,
-	5:4,
-	6:5,
-	7:6,
-	8:7,
-	9:8,
-	10:9,
-	J:10,
-	Q:11,
-	K:12,
-	A:13,
-};
-
-const randomizePosition = (min, max) => {
-	min = Math.ceil(min);
-  	max = Math.floor(max);
-	return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-
-const generateDeckOfCards = () => {
-	const deck = [];
-
-	for (let suit of suits) {
-		for (let card of cards) {
-			deck.push({
-				cardFace: card,
-				suit: suit,
-				value: VALUE_MAP[card]
-			})
-		}
-	}
-		return deck
-}
-
-const shuffle = (deck) => {
-	let shuffledDeck = new Array(totalNumCards);
-	let filledSlots = [];
-	for (let i = 0; i < totalNumCards; i++) {
-		if (i === 51) {
-			// Fill last undefined slot when only 1 card left to shuffle
-			const lastSlot = shuffledDeck.findIndex((el) => typeof el == 'undefined');
-				shuffledDeck[lastSlot] = deck[i];
-				filledSlots.push(lastSlot);
-		} else {
-			let shuffleToPosition = randomizePosition(0, totalNumCards - 1);
-				while (filledSlots.includes(shuffleToPosition)) {
-					shuffleToPosition = randomizePosition(0, totalNumCards - 1);
-				}
-						shuffledDeck[shuffleToPosition] = deck[i];
-						filledSlots.push(shuffleToPosition);
-		}
-	}
-	return shuffledDeck
-}
-
-const popCards = (deck, numToPop) => {
-	// Note: While this is a Shallow Copy, (It copies the references to the children) - note that we are mutating it by 
-	// Actually modifying the array, NOT the children. This is why the length of mutableCopy changes, but that of deck 
-	// Does not.
-	const mutableDeckCopy = [...deck];
-	let chosenCards;
-	if (numToPop === 1) {
-		chosenCards = mutableDeckCopy.pop();
-	} else {
-		chosenCards = [];
-		for(let i = 0; i < numToPop; i++) {
-			chosenCards.push(mutableDeckCopy.pop());
-		}
-	}
-		return { mutableDeckCopy, chosenCards }
-}
-
-const popShowdownCards = (deck, numToPop) => {
-	// When dealMissingCommunityCards was calling popCards() with the condition numToPop === 1
-	// It was returning a raw object instead of an array, and calling a for...of loop, causing the program to crash
-	// Until we can refactor this code and all of its calling functions 
-	// (change the code for dealFlop/River/Turn to use a consistent .concat function instead of .push())
-	// We'll just duplicat this code here and utilize it in dealMissingCommunityCards
-	const mutableDeckCopy = [...deck];
-	let chosenCards;
-	if (numToPop === 1) {
-		chosenCards = [mutableDeckCopy.pop()];
-	} else {
-		chosenCards = [];
-		for(let i = 0; i < numToPop; i++) {
-			chosenCards.push(mutableDeckCopy.pop());
-		}
-	}
-		return { mutableDeckCopy, chosenCards }
-}
-
-const dealPrivateCards = (state) => {
-		// Clear any "clear cards" flag if it exists
-		state.clearCards = false;
-		let animationDelay = 0;
-		
-		// Continue dealing until the deck is empty
-		while (state.deck.length > 0) {
-		  // Pop a single card from the deck
-		  const { mutableDeckCopy, chosenCards } = popCards(state.deck, 1);
-		  
-		  // Add animation delay (similar to your dealPrivateCards function)
-		  chosenCards.animationDelay = animationDelay;
-		  animationDelay = animationDelay + 250;
-		  
-		  // Add the card to the current active player's hand
-		  state.players[state.activePlayerIndex].cards.push(chosenCards);
-		  
-		  // Update the deck
-		  state.deck = [...mutableDeckCopy];
-		  
-		  // Move to the next player
-		  state.activePlayerIndex = handleOverflowIndex(state.activePlayerIndex, 1, state.players.length, 'up');
-		}
-		
-		// Move to the next phase after all cards are dealt
-		state.phase = 'allCardsDealt';
-		
-		return state;
-};
-
-
-const buildValueSet = (hand) => {
-	return Array.from(new Set(hand.map(cardInfo => cardInfo.value)))
-}
-
-const dealMissingCommunityCards = (state) => {
-	const cardsToPop = 5 - state.communityCards.length
-	if (cardsToPop >= 1) {
-		let animationDelay = 0;
-		const { mutableDeckCopy, chosenCards } = popShowdownCards(state.deck, cardsToPop);
-			
-			for (let card of chosenCards) {
-				card.animationDelay = animationDelay;
-				animationDelay = animationDelay + 250;
-				state.communityCards.push(card);
-			}
-
-		state.deck = mutableDeckCopy;
-	}
-	state.phase = 'showdown'
-	return state
-}
-
-// Add these functions to your existing utils/cards.js file
-
-
-const throwCardsToTable = (cardsToThrow, playerId, gameState) => {
-	// Create a copy of the game state to modify
-	const newGameState = { ...gameState };
-	
-	// Add the thrown cards to the table
-	newGameState.cardsOnTable = [
-	  ...cardsToThrow.map(card => ({
-		...card,
-		playedBy: playerId,
-		animationDelay: Math.random() * 200 // Randomize animation for natural look
-	  }))
-	];
-	
-	// Update the player's hand by removing the thrown cards
-	const playerIndex = newGameState.players.findIndex(player => player.name === playerId);
-	if (playerIndex >= 0) {
-	  // Filter out the cards that were thrown
-	  newGameState.players[playerIndex].cards = newGameState.players[playerIndex].cards.filter(
-		playerCard => !cardsToThrow.some(
-		  thrownCard => thrownCard.suit === playerCard.suit && thrownCard.cardFace === playerCard.cardFace
-		)
-	  );
-	}
-	
-	return newGameState;
-  };
-  
-
-const clearTableCards = (gameState) => {
-	return {
-	  ...gameState,
-	  cardsOnTable: []
-	};
-  };
-
-export { generateDeckOfCards, shuffle, popCards, dealPrivateCards, dealMissingCommunityCards, buildValueSet, throwCardsToTable, clearTableCards }
-
-
-FILE PATH: ./utils/ui.js
-----------------------------
-const renderUnicodeSuitSymbol = (suit) => {
-	switch(suit) {
-		case('Heart'): return '\u2665';
-		case('Diamond'): return '\u2666';
-		case('Spade'): return '\u2660';
-		case('Club'): return '\u2663';
-		default: throw Error('Unfamiliar String Recieved in Suit Unicode Generation');
-	}
-}
-
-
-export { 
-	renderUnicodeSuitSymbol, 
-}
-
-
-
-
-FILE PATH: ./utils/scumLogic.js
-----------------------------
-// utils/scumLogic.js
-
-const SUITS = ['Heart', 'Spade', 'Club', 'Diamond'];
-const FACES = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'];
-
-// Assign numerical values for comparison (3 is lowest, 2 is highest)
-const VALUE_MAP = FACES.reduce((map, face, index) => {
-  map[face] = index + 1; // 3=1, 4=2, ..., A=12, 2=13
-  return map;
-}, {});
-
-/**
- * Generates a standard 52-card deck for Scum.
- */
-export const generateDeck = () => {
-  const deck = [];
-  for (const suit of SUITS) {
-    for (const face of FACES) {
-      deck.push({
-        cardFace: face,
-        suit: suit,
-        value: VALUE_MAP[face],
-        id: `${face}-${suit}` // Unique ID for React keys
-      });
-    }
-  }
-  return deck;
-};
-
-/**
- * Shuffles a deck of cards using the Fisher-Yates algorithm.
- */
-export const shuffleDeck = (deck) => {
-  let shuffledDeck = [...deck]; // Create a copy
-  for (let i = shuffledDeck.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffledDeck[i], shuffledDeck[j]] = [shuffledDeck[j], shuffledDeck[i]]; // Swap elements
-  }
-  return shuffledDeck;
-};
-
-/**
- * Deals cards from the deck to players.
- * Returns the updated players array and the remaining deck.
- */
-export const dealCards = (deck, players) => {
-  let currentDeck = [...deck];
-  const numPlayers = players.length;
-  const updatedPlayers = players.map(p => ({ ...p, hand: [] })); // Clear hands first
-  let playerIndex = 0;
-
-  while (currentDeck.length > 0) {
-    const card = currentDeck.pop();
-    // Add animation delay if needed (optional)
-    card.animationDelay = playerIndex * 50 + updatedPlayers[playerIndex % numPlayers].hand.length * 20;
-    updatedPlayers[playerIndex % numPlayers].hand.push(card);
-    playerIndex++;
-  }
-
-  // Sort each player's hand for better display
-  updatedPlayers.forEach(player => {
-    player.hand.sort((a, b) => a.value - b.value);
-  });
-
-  return { updatedPlayers, remainingDeck: currentDeck };
-};
-
-/**
- * Gets the Scum value of a card.
- */
-export const getCardValue = (card) => {
-  return card.value;
-};
-
-/**
- * Checks if a proposed play is valid according to Scum rules.
- *
- * @param {Array} selectedCards - The cards the player wants to play.
- * @param {Array} cardsOnTable - The cards currently in the pile/trick.
- * @returns {Boolean|String} - True if valid, or a string message if invalid.
- */
-export const isValidPlay = (selectedCards, cardsOnTable) => {
-  if (!selectedCards || selectedCards.length === 0) {
-    return "No cards selected.";
-  }
-
-  // Check if all selected cards have the same face value
-  const firstCardValue = selectedCards[0].value;
-  if (!selectedCards.every(card => card.value === firstCardValue)) {
-    return "Selected cards must have the same rank.";
-  }
-
-  const numSelected = selectedCards.length;
-
-  // --- Playing onto an empty table ---
-  if (!cardsOnTable || cardsOnTable.length === 0) {
-    // Any single, double, triple, or quad is valid to start
-    if (numSelected >= 1 && numSelected <= 4) {
-      return true; // Valid lead play
-    } else {
-      return "Invalid number of cards to lead.";
-    }
-  }
-
-  // --- Playing onto existing cards ---
-  const numOnTable = cardsOnTable.length;
-  const tableValue = cardsOnTable[0].value;
-
-  // Must play the same number of cards
-  if (numSelected !== numOnTable) {
-    return `Must play ${numOnTable} card(s).`;
-  }
-
-  // Must play a higher rank
-  if (firstCardValue <= tableValue) {
-    return "Must play a higher rank.";
-  }
-
-  // If all checks pass
-  return true;
-};
-
-/**
- * Finds the index of the next player who hasn't finished.
- */
-export const findNextPlayerIndex = (currentIndex, players) => {
-    let nextIndex = (currentIndex + 1) % players.length;
-    let attempts = 0;
-    // Keep looping until we find a player with cards, or we've checked everyone
-    while (players[nextIndex].hand.length === 0 && attempts < players.length) {
-        nextIndex = (nextIndex + 1) % players.length;
-        attempts++;
-    }
-    // If all players are finished (attempts === players.length), return -1 or handle game over
-    if (attempts === players.length) return -1; // Or handle appropriately
-    return nextIndex;
-};
-
-
-/**
- * Finds all valid plays a player can make given their hand and the cards on table.
- *
- * @param {Array} hand - The player's hand.
- * @param {Array} cardsOnTable - The cards currently on the table.
- * @returns {Array} - An array of valid plays (each play is an array of cards).
- */
-export const findValidPlays = (hand, cardsOnTable) => {
-    const validPlays = [];
-    if (!hand || hand.length === 0) {
-      return validPlays; // No cards, no plays
-    }
-  
-    // Group hand by card value
-    const cardsByValue = hand.reduce((groups, card) => {
-      const value = card.value;
-      if (!groups[value]) {
-        groups[value] = [];
-      }
-      groups[value].push(card);
-      return groups;
-    }, {});
-  
-    // Check potential plays (singles, doubles, triples, quads)
-    for (const value in cardsByValue) {
-      const group = cardsByValue[value];
-      // Check singles
-      if (isValidPlay([group[0]], cardsOnTable) === true) {
-        validPlays.push([group[0]]);
-      }
-      // Check doubles
-      if (group.length >= 2 && isValidPlay(group.slice(0, 2), cardsOnTable) === true) {
-        validPlays.push(group.slice(0, 2));
-      }
-      // Check triples
-      if (group.length >= 3 && isValidPlay(group.slice(0, 3), cardsOnTable) === true) {
-        validPlays.push(group.slice(0, 3));
-      }
-      // Check quads
-      if (group.length >= 4 && isValidPlay(group.slice(0, 4), cardsOnTable) === true) {
-        validPlays.push(group.slice(0, 4));
-      }
-    }
-  
-    return validPlays;
-  };
-
-
 FILE PATH: ./acc.sh
 ----------------------------
 #!/bin/bash
@@ -1683,7 +1683,7 @@ FILE PATH: ./App.jsx
 ----------------------------
 import React, { Component } from 'react';
 import './App.css';
-import './Poker.css'; // Keep for layout and card styles
+import './Scum.css'; // Keep for layout and card styles
 
 import Spinner from './Spinner'; // Keep
 // import WinScreen from './WinScreen'; // Keep or adapt
@@ -1760,7 +1760,7 @@ class App extends Component {
         clearTimeout(this.aiTurnTimeout);
       }
       console.log(`[AI Trigger] Setting AI timeout for Player ${currentPlayerIndex} (${currentPlayer.name})`); // Debug log
-      this.aiTurnTimeout = setTimeout(this.handleAiTurn, AI_DELAY * 5000);
+      this.aiTurnTimeout = setTimeout(this.handleAiTurn, AI_DELAY * 2_000);
     }
 
     // --- Cleanup Logic ---
@@ -1878,7 +1878,7 @@ class App extends Component {
     updatedPlayers[currentPlayerIndex].hand = newHand;
 
     // 2. Update cards on table
-    const newCardsOnTable = [...cardsToPlay]; // Replace the pile
+    const newCardsOnTable = [...cardsOnTable, ...cardsToPlay]; // Append played cards to the existing pile
 
     // 3. Check if player finished
     let newRoundWinners = [...this.state.roundWinners];
