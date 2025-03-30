@@ -1,705 +1,406 @@
-html,
-body, 
-#root,
-.App {
-	width: 100%;
-	height: 100%;
-}
-img {
-	width: 100%;
-	height: 100%;
-}
-.centered-flex-row {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	width: auto;
-	height: auto;
-}
+ /* === Base & Full Screen === */
+ html,
+ body,
+ #root,
+ .App {
+     width: 100%;
+     height: 100%;
+     margin: 0;
+     padding: 0;
+     overflow: hidden; /* Prevent scrollbars on body */
+     font-family: sans-serif; /* Add a default font */
+ }
 
-.spinner-container {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
+ /* === Main Wrapper - Uses Flexbox === */
+ .poker-table--wrapper {
+     position: relative;
+     width: 100%;
+     height: 100%;
+     background-image: radial-gradient(#8B0000 60%, #6A0000 82%);
+     display: flex; /* Use flexbox */
+     flex-direction: column; /* Stack table and controls vertically */
+     justify-content: space-between; /* Push table up, controls down */
+ }
 
-	height: 200px;
-	width: 200px;
+ /* Wrapper for error/showdown states */
+ .error-container, .showdown-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    text-align: center;
+ }
+ .showdown-container--wrapper {
+     color: white;
+     background-color: rgba(0, 0, 0, 0.85);
+     padding: 30px;
+     border-radius: 10px;
+     max-width: 90%;
+     max-height: 90%;
+     overflow-y: auto; /* Allow scrolling if content overflows */
+ }
+ .showdown-container--wrapper h1 { margin-top: 0; }
+ .showdown-container--wrapper button {
+     padding: 10px 20px;
+     font-size: 1em;
+     cursor: pointer;
+ }
+ .showdown-container--wrapper ol { text-align: left; display: inline-block; }
 
-	animation: App-logo-spin infinite 20s linear;
-}
+ /* === Game Table Area === */
+ .poker-table--container {
+     position: relative; /* Context for absolute positioned children (players, pile) */
+     flex-grow: 1; /* Takes up available vertical space */
+     width: 100%;
+     /* Removed fixed height/width and centering transforms */
+     /* Use padding to create space from edges if needed */
+     padding: 10px;
+     box-sizing: border-box;
+     min-height: 0; /* Fix potential flexbox overflow issue */
+ }
 
-.loading-container {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	height: 100%;
-	width: 100%
-}
-
-.flex-centered-column {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-
-	width: auto;
-	height: auto;
-}
-
-.playing-card.selected {
-	border: 2px solid yellow;
-	box-shadow: 0 0 10px yellow; /* Add glow effect */
-	transform: translateY(-10px); /* Add lift effect here */ /* Adjust px as needed */
-  }
-
-.table-pile-container { 
-	position: relative; 
-	width: 200px; 
-	height: 50px; 
-}
-.game-controls { 
-	display: flex;
-	 justify-content: center;
-	  align-items: center;
-	   width: 100%;
-	    height: 100%;
-}
-
-.game-controls .pass-button {
-	/* Make the pass button stand out */
-	border: 1px solid orange;
-	background-color: #444; /* Slightly different background */
-	color: orange;
-}
-.game-controls .pass-button:hover {
-	background-color: #555;
-	border-color: yellow;
-	color: yellow;
-}
-
-.game-controls .pass-button:disabled {
-	border: 1px solid #555;
-	background-color: #333;
-	color: #777;
-	opacity: 0.6;
-	cursor: not-allowed;
-}
-
-
-.player-info--card-count {
-    position: absolute;
-    bottom: 50px; /* Position it below the name */
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    font-size: 11px;
-    text-shadow: 1px 1px 2px black;
-    background-color: rgba(0, 0, 0, 0.6); /* Optional: add background for readability */
-    padding: 2px 5px;
-    border-radius: 3px;
-    white-space: nowrap; /* Prevent wrapping */
-}
-
-/* Style for players still active in the current round/trick */
-.player-entity--wrapper.active-in-round {
-	background-color: rgba(0, 100, 0, 0.2); /* Subtle green tint */
-	border: 2px solid rgba(200, 255, 200, 0.5); 
-  }
-  
-/* Make non-active players dimmer (alternative to highlighting active ones) */
-.player-entity--wrapper:not(.active-in-round) {
-	opacity: 0.75; /* Make players who passed or finished dimmer */
-	transition: opacity 0.3s ease-in-out;
-}
-/* Ensure current player is fully opaque even if not technically 'active' (e.g., start of trick) */
-.player-entity--wrapper.current-player-turn {
-	opacity: 1;
-}
-  
-/* Ensure the notification box appears above potentially dimmed players */
-.actionBox {
-	/* background: rgba(0,0,0,0.85); */
-	color: yellow;
-	text-shadow: 2px 2px 10px rgba(0,0,0,1);
-	padding: 12px;
-	border-radius: 5px; /* Optional: rounded corners */
-	font-weight: bold; /* Make text bolder */
-
-	position: absolute;
-	top: -35px; /* Adjust vertical position */
-	width: auto; /* Fit content */
-	min-width: 80px; /* Minimum width */
-	white-space: nowrap; /* Prevent wrapping */
-	left: 50%;
-	transform: translateX(-50%);
-	z-index: 100; /* Ensure it's above cards/player info */
-	display: none; /* Initially hidden */
-	justify-content: center;
-	pointer-events: none; /* Prevent interaction */
-}
-  
-
-
-.playing-card {
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	background-color: white;
-	font-size: 1em; /* Consider making slightly smaller if needed */
-	height: 40px;
-	width: 25px;
-	/* margin: 0 -2px; */ /* REMOVE NEGATIVE MARGIN */
-    margin: 0; /* Reset margin */
-	border: 1px solid gray;
-	border-radius: 2px; /* Optional: slightly rounded corners */
-	box-shadow: 1px 1px 3px rgba(0,0,0,0.3); /* Optional: add shadow */
-
-	opacity: 0;
-	animation: fade-in-up 0.5s;
-	animation-fill-mode: both;
-
-    /* Prevent text selection */
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-}
-
-
-.robotcard {
-	background-color: #890808;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='12' viewBox='0 0 20 12'%3E%3Cg fill-rule='evenodd'%3E%3Cg id='charlie-brown' fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M9.8 12L0 2.2V.8l10 10 10-10v1.4L10.2 12h-.4zm-4 0L0 6.2V4.8L7.2 12H5.8zm8.4 0L20 6.2V4.8L12.8 12h1.4zM9.8 0l.2.2.2-.2h-.4zm-4 0L10 4.2 14.2 0h-1.4L10 2.8 7.2 0H5.8z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-    height: 40px; /* Match playing card */
-	width: 25px;  /* Match playing card */
-    border: 1px solid #500000; /* Darker border */
-    border-radius: 2px;
-    box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-}
-.folded {
-	animation: fade-in-out 0.5s;
-	animation-fill-mode: both;
-}
-
-/* Card Animations */
-
-@keyframes fade-in-out {
-	0% {
-		opacity: 1;
-		transform: translateY(0%);
-	}
-	100% {
-		opacity: 0;
-		transform: translateY(-100%)
-	}
-}
-
-@keyframes fade-in-up {
-	0% {
-		opacity: 0;
-		transform: translateY(100%)
-	}
-	100% {
-		opacity: 1;
-		transform: translateY(0%);
-	}
-}
-
-/* Action Status Notification Base Styles & Transitions*/
-
-.actionBox {
-	/* background: rgba(0,0,0,0.85); */ 
-	color: yellow;
-	text-shadow: 2px 2px 10px rgba(0,0,0,1);
-	padding: 12px;
-	
-	position: absolute;
-	top: -30px;
-	width: 100%;
-	left: 50%;
-	transform: translateX(-50%);
-	z-index: 100;
-	display: none;
-	justify-content: center;
-}
-
-.transitionable-actionBox-enter {
-	display: flex;
-	opacity: 1;
-	transform: translateX(-50%);
-}
-
-.transitionable-actionBox-enter-active {
-	display: flex;
-	opacity: 1;
-	transition: opacity 1250ms ease-in-out;
-	transform: translateX(-50%);
-}
-.transitionable-actionBox-enter-done {
-	display: flex;
-}
-
-.transitionable-actionBox-exit {
-	display: flex;
-	opacity: 1;
-	transform: translateX(-50%);
-}
-
-.transitionable-actionBox-exit-active {
-	display: flex;
-	opacity: 0;
-	transform: translateX(-50%) translateY(-55px);
-	transition: opacity 1250ms ease-in-out, transform 1250ms linear;
-}
-
-
-
-
-/* GAME BOARD */
-
-.poker-app--background {
-	position: relative;
-	overflow: auto;
-	width: 100%;
-	height: 100%;
-}
+ /* === Player Positioning (Responsive Percentages) === */
  .p0, .p1, .p2, .p3, .p4 {
- 	position: absolute;
-
- 	display: flex;
- 	align-items: center;
- 	flex-direction: column;
-
-	/* 
- 	width: 175px;
- 	height: 200px;
-	
-	 border-radius: 200px;
-	 */
+     position: absolute;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     /* Adjust width/height based on content or use min/max */
+     width: auto;
+     min-width: 100px; /* Example minimum */
+     transform: translate(-50%, -50%); /* Center elements based on their top/left */
+     /* Default positions (adjust percentages as needed) */
  }
 
+ /* Player positions adjusted for better distribution */
  .p0 { /* Human - Bottom Center */
-	bottom: 0%;
-   	left: 50%;
-}
-.p1 { /* Player 2 - Bottom Left */
-	bottom: 10%;
-	left: 5%;
-}
-.p2 { /* Player 3 - Top Left */
-	top: 10%;
-	left: 5%;
-}
-.p3 { /* Player 4 - Top Right */
-	top: 10%;
-	right: 5%;
-}
-.p4 { /* Player 5 - Bottom Right */
-	bottom: 15%;
-	right: 5%;
-}
-
-
- .community-card-container {
- 	position: absolute;
- 	display: flex;
- 	justify-content: center;
-
- 	top: calc(39.5% - 60px);
- 	left: calc(50% - 100px);
- 	
- 	display: flex;
-
- 	width: 200px;
- 	height: 60px;
-
+     bottom: 5%;  /* Closer to bottom edge */
+     left: 50%;
+     transform: translateX(-50%); /* Only X transform needed if bottom is 0 */
+ }
+ .p1 { /* Player 2 - Left Middle */
+     top: 50%;
+     left: 5%; /* Closer to left edge */
+     transform: translateY(-50%);
+ }
+ .p2 { /* Player 3 - Top Left */
+     top: 10%;
+     left: 13%;
+     transform: translate(-50%, 0);
+ }
+ .p3 { /* Player 4 - Top Right */
+     top: 10%;
+     right: 13%;
+     transform: translate(50%, 0); /* Adjust transform for right */
+ }
+ .p4 { /* Player 5 - Right Middle */
+     top: 50%;
+     right: 5%; /* Closer to right edge */
+     transform: translateY(-50%);
  }
 
- .showdown-container--community-cards {
+ /* Adjust player positions slightly on smaller screens if needed */
+ @media (max-width: 992px) {
+    .p2 { left: 10%; }
+    .p3 { right: 10%; }
+    .p1 { left: 3%; }
+    .p4 { right: 3%; }
+ }
+ @media (max-width: 768px) {
+    .p0 { bottom: 2%; }
+    .p2 { top: 5%; left: 10%; }
+    .p3 { top: 5%; right: 10%; }
+    /* Adjust card sizes/spacing here too if they overlap */
+    .playing-card {
+        height: 35px;
+        width: 22px;
+    }
+    .robotcard {
+        height: 35px;
+        width: 22px;
+    }
+    /* Adjust hand container height if needed */
+    .player-hand-container { height: 80px; }
+    /* Adjust player info box styling */
+ }
+
+ .player-info--name.current-player-name-highlight {
+	color: dodgerblue; /* Or any blue you prefer */
+	font-weight: bold;
+	transition: color 0.3s ease-in-out, font-weight 0.3s ease-in-out;
+	}
+
+
+/* === Community Cards / Table Pile === */
+.community-card-container {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 	display: flex;
-	height: 52px;
-	margin-bottom: 1rem;
+	justify-content: center;
+	align-items: center;
+	max-width: 80%; /* Adjust max-width if needed */
+	min-height: 100px; /* Ensure space for larger cards */
+	height: auto; /* Allow height to adjust to content */
+	pointer-events: none;
+	gap: -15px; /* Overlap cards slightly - adjust as needed */
+}
+.table-pile-container {
+   /* Styles for the pile itself within the container */
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   flex-wrap: nowrap; /* Prevent wrapping */
+}
+
+/* === Specific Styling for Cards ON THE TABLE PILE === */
+.community-card-container .playing-card {
+   position: relative; /* Override absolute positioning from .abscard if inherited */
+   height: 40px;      /* Larger height */
+   width: 25px;       /* Larger width */
+   box-shadow: 2px 2px 5px rgba(0,0,0,0.4); /* Stronger shadow */
+   /* Remove transform overrides if they cause issues */
+   transform: none !important;
+   margin: 0 -10px; /* Overlap cards horizontally */
+}
+/* Ensure robot cards on pile also get sized */
+.community-card-container .robotcard {
+   position: relative;
+   height: 40px;      /* Larger height */
+   width: 30px;       /* Larger width */
+margin: 0 -10px;
+}
+
+
+ /* === Game Message === */
+ .game-message-container {
+     position: absolute;
+     top: 15px; /* Position from top */
+     left: 50%;
+     transform: translateX(-50%);
+     color: white;
+     background-color: rgba(0, 0, 0, 0.7);
+     padding: 8px 15px;
+     border-radius: 5px;
+     z-index: 50;
+     text-align: center;
+     min-width: 200px;
+     max-width: 80%;
+ }
+ .game-message-subtext {
+     font-size: 0.9em;
+     margin-top: 4px;
+     opacity: 0.9;
  }
 
- .cardbabmock {
- 	width: 85px;
- 	margin-left: 5px;
- 	height: 100px;
- 	background-color: black;
+ /* === Game Controls Area (Bottom Bar) === */
+ .game-controls-area {
+     display: flex;
+     justify-content: space-between; /* Space out buttons and slider */
+     align-items: center;
+     width: 100%;
+     padding: 10px 20px; /* Add padding */
+     background-color: rgba(0, 0, 0, 0.75);
+     box-sizing: border-box;
+     flex-shrink: 0; /* Prevent shrinking */
+     min-height: 60px; /* Ensure minimum height */
+ }
+ @media (max-width: 600px) {
+    .game-controls-area {
+        flex-direction: column; /* Stack controls on small screens */
+        padding: 10px;
+    }
+    .ai-speed-slider-container {
+        width: 100%; /* Make slider take full width */
+        margin-top: 10px; /* Add space */
+        justify-content: center;
+    }
+    .game-action-bar {
+        justify-content: center; /* Center buttons */
+    }
  }
 
+ /* Game Action Bar (Play/Pass buttons) */
  .game-action-bar {
- 	position: absolute;
-
- 	display: flex;
- 	align-items: center;
- 	justify-content: space-around;
-
- 	left: 0;
- 	right: 0;
- 	top: 0;
- 	height: 50px;
- 	background-color: rgba(0,0,0,0.85);
- 	color: white;
+     display: flex;
+     align-items: center;
+     justify-content: center; /* Center buttons within their space */
+     gap: 15px; /* Space between buttons */
+     /* Removed absolute positioning */
+ }
+ /* Make sure GameControls component doesn't override flex */
+ .game-controls {
+    display: flex;
+    gap: 15px;
+ }
+ .game-controls button { /* Basic button styling */
+     padding: 10px 20px;
+     font-size: 1em;
+     border-radius: 5px;
+     border: 1px solid #555;
+     background-color: #333;
+     color: white;
+     cursor: pointer;
+     transition: background-color 0.2s ease;
+ }
+ .game-controls button:not(:disabled):hover {
+     background-color: #555;
+ }
+ .game-controls button:disabled {
+     opacity: 0.5;
+     cursor: not-allowed;
+ }
+ .game-controls .play-button { /* Specific style for play */
+    background-color: #28a745; /* Green */
+    border-color: #28a745;
+ }
+ .game-controls .play-button:not(:disabled):hover {
+    background-color: #218838;
+ }
+ .game-controls .pass-button { /* Specific style for pass */
+     background-color: #ffc107; /* Yellow/Orange */
+     border-color: #ffc107;
+     color: #333;
+ }
+ .game-controls .pass-button:not(:disabled):hover {
+     background-color: #e0a800;
  }
 
 
- .abscard {
-	position: absolute;
-   height: 50px; /* Increased slightly for arc, adjust as needed */
-   pointer-events: none; /* Container shouldn't block clicks */
-}
-
-/* Add this new rule to allow clicks on the cards themselves */
-.abscard > div { /* Targets the wrapper divs generated in Player.jsx */
-    pointer-events: auto;
-}
-
- .shrinkwrap {
- 	transform: scale(0.3);
+ /* AI Speed Slider */
+ .ai-speed-slider-container {
+     display: flex;
+     align-items: center;
+     gap: 10px; /* Space elements */
+     color: white;
+     font-size: 0.9em;
+     /* Removed absolute positioning and fixed 'right' */
+     /* Takes remaining space due to justify-content: space-between on parent */
+     flex-basis: 300px; /* Give it a base width, adjust as needed */
+     flex-shrink: 1; /* Allow shrinking */
+     justify-content: flex-end; /* Align items to the right within its space */
+ }
+ .ai-speed-slider-container label {
+     white-space: nowrap; /* Prevent label wrapping */
+ }
+ .ai-speed-slider-container input[type="range"] {
+     cursor: pointer;
+     flex-grow: 1; /* Allow slider to take available space */
+     max-width: 150px; /* Limit slider width */
+ }
+ .ai-speed-slider-container span {
+     min-width: 55px; /* Ensure space for 'xxxx ms' */
+     text-align: right;
  }
 
- .action-buttons {
- 	display: flex;
- 	align-items: center;
- 	justify-content: space-around;
- 	width: auto;
- 	height: 100%;
- }
-
- .slider-boi {
- 	display: flex;
- 	align-items: center;
- 	justify-content: flex-end;
- 	width: 55%;
- 	height: 100%;
- }
-
- .action-button {
- 	height: 45px;
- 	width: 125px;
- 	margin: 0 12px;
- 	border-radius: 500px;
- 	background-color: rgba(242, 242, 242, 0.80);
- 	font-size: 28px;
- 	color: white;
- 	background-color: #2adb2a;
- 	border: 3px solid white;
- 	outline: none;
- 	transition: background-color 0.4s ease-out, color 0.4s ease-out;
- }
- .action-button:hover {
- 	cursor: pointer;
- 	background-color: #ffc935;
-	color: #f56132;
- }
- .fold-button {
- 	height: 45px;
- 	width: 125px;
- 	margin: 0 12px;
- 	background-color: rgba(255, 80, 80, 0.8);
- 	font-size: 28px;
- 	color: white;
- 	outline: none;
- 	z-index: 100;
- 	border-radius: 500px;
- 	border: 3px solid white;
- 	transition: background-color 0.4s ease-out, color 0.4s ease-out;
- }
- .fold-button:hover {
- 	background-color: rgb(255, 0, 0);
- 	cursor: pointer;
- }
-
+ /* === Player Component & Cards === */
+ /* (Keep most of your existing Player, Card, Player Info styles) */
+ /* Ensure player hands don't overlap excessively */
  .player-hand-container {
-    position: relative; /* Crucial for positioning the absolute cards within */
+    position: relative;
+    display: flex; /* Use flex for card layout */
+    justify-content: center; /* Center cards horizontally */
+    align-items: flex-end; /* Align cards to bottom for arc effect */
+    height: 100px; /* Adjust as needed */
+    width: 100%; /* Ensure it spans */
+    min-width: 150px; /* Prevent cards collapsing too much */
  }
 
+ /* Card absolute positioning for fanning/arcing */
+ .abscard {
+    position: absolute;
+    bottom: 0; /* Base position for transform */
+    height: 50px; /* Card height */
+    transform-origin: bottom center; /* Rotate/translate from bottom center */
+    transition: transform 0.2s ease-out; /* Smooth selection */
+    /* pointer-events: none; by default on container */
+ }
+ .abscard > div { /* Target the card element inside */
+    pointer-events: auto; /* Make card clickable */
+    height: 100%; /* Ensure clickable area matches visual */
+ }
+ /* Adjust card size if needed */
+ .playing-card {
+     display: flex;
+     flex-direction: column;
+     justify-content: center;
+     align-items: center;
+     background-color: white;
+     font-size: 0.8em; /* Slightly smaller font */
+     height: 100%; /* Inherit from .abscard */
+     width: 30px;  /* Adjust width as needed */
+     border: 1px solid gray;
+     border-radius: 3px;
+     box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+     user-select: none;
+     overflow: hidden; /* Hide overflow from card content */
+ }
+ .playing-card.selected {
+     border: 2px solid yellow;
+     box-shadow: 0 0 8px yellow;
+     transform: translateY(-15px) !important; /* Lift selected card, override arc */
+ }
 
+ /* Robot card styling */
+ .robotcard {
+    background-color: #890808; /* ... keep your existing background */
+    height: 100%; /* Match playing card height via .abscard */
+	width: 30px;  /* Match playing card */
+    border: 1px solid #500000;
+    border-radius: 3px;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+ }
+
+ /* Player Info Box */
  .player-info-box {
- 	display: flex;
- 	flex-direction: column;
- 	align-items: center;
- 	color: white;
- 	background-color: rgba(0,0,0,0.35);
- 	font-size: 0.87em;
- 	z-index: 99;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     color: white;
+     background-color: rgba(0, 0, 0, 0.4);
+     font-size: 0.8em;
+     padding: 5px 8px;
+     border-radius: 4px;
+     margin-bottom: 5px; /* Space between info and hand */
+     text-align: center;
+     min-width: 80px;
+ }
+ .player-info-box h5 { margin: 2px 0; font-size: 1.1em; }
+ .player-info--card-count { font-size: 0.9em; opacity: 0.9; }
 
- 	padding: 12px;
- 	margin-top: 12px;
+ /* Highlight current player */
+ .player-info-box.current-player-highlight {
+    background-color: rgba(50, 100, 200, 0.6); /* Blueish highlight */
+    box-shadow: 0 0 5px rgba(100, 150, 255, 0.7);
+ }
+ /* Dim inactive players */
+ .player-entity-container.inactive-in-round {
+    opacity: 0.65;
+    transition: opacity 0.3s ease-in-out;
+ }
+ .player-entity-container.current-player-turn {
+     opacity: 1; /* Ensure current is never dimmed */
  }
 
-.player-info-box h5 {
-	margin: 4px 0;
-}
-
- .slider-handles > div > div {
-	 color: white !important;
-	 font-size: 24px !important;
- }
-
- .showdown-row {
- 	display: flex;
- 	flex-direction: column;
- 	align-items: center;
- 	align-items: center;
-
- 	margin-bottom: 15px;
- }
-
-.pot-container {
-	position: absolute;
-	top: 40%;
-	left: calc(50% - 22.5px);
-	color: white;
-}
-
-.player-entity--container {
-	display: flex;
-	height: auto;
-	width: auto;
-}
-.player-entity--wrapper {
-	position: absolute;
-	/* background-color: rgba(0,0,0,0.35); */
-	border-top-left-radius: 200px;
-	border-bottom-left-radius: 200px;
-}
-.player-avatar--container {
-	position: relative; /* Ensure this is relative for absolute positioning of children */
-	height: 100px;
-	width: 100px;
-	border-radius: 100px;
-	padding: 6px 6px 6px 6px;
-    margin-bottom: 25px; /* Add some space below the avatar area for the count */
-}
-
-.player-avatar--image {
-	border-radius: 500px;
-	border: 1px solid whitesmoke;
-	background-color: rgba(176, 14, 14, 0.22);
-	transition: border 0.1s ease-out;
-}
-
-.activePlayer {
-	border: 2px solid #00ff25;
-}
-
-.player-info--wrapper {
-	width: 100px;
-	color: white;
-}
-
-.player-info--stash--container,
-.player-info--bet--container {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	color: white;
-	margin-top: 10px;
-	text-shadow: 2px 2px 18px rgba(0,0,0,0.95);
-}
-
-
-.player-info--stash--image,
-.player-info--bet--image {
-	height: 25px;
-	width: 25px;
-}
-
-.poker-table--wrapper {
-	position: relative;
-	width: 100%;
-	height: 100%;
-	background-image: radial-gradient(#8B0000 60%, #6A0000 82%);
-}
-
-.poker-table--container {
-	position: absolute;
-}
-
-.showdown-container--wrapper {
-	display: flex;
-   	flex-direction: column;
-	align-items: center;
-	position: absolute;
-	overflow: auto;
-	left: 0;
-	right: 0;
-	top: 0;
-	background-color: rgba(0,0,0,0.85);
-	color: white;
-	height: auto;
-	min-height: 100%;
-	width: 100%;
-	z-index: 100;
-}
-
-.showdown-container--title {
-	font-size: 28px;
-	margin: 0 6px;
-}
-
-.showdown-container--community-card-label {
-	margin: 12px 0;
-}
-
-.showdown-container--messages {
-	text-align: left;
-}
-
-.showdown-player--entity {
-	display: flex;
-	align-items: center;
-	margin-bottom: 8px;
-	height: 112px;
-}
-
-
-.showdownPlayer--data,
-.showdownPlayer--privateCards  {
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-}
-.showdown-player--besthand--container {
-	margin-left: 12px;
-}
-
-.showdown-player--entity .player-avatar--container {
-	margin-right: 12px;
-}
-
-.showdown-player--entity .player-info--name {
-	border: 1px solid white;
-}
-
-.showdown-player--besthand--cards {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	width: auto;
-	height: auto;
-}
-
-.player-entity--container {
-	display: flex;
-}
-
-.showdown--handrank {
-	width: 115px;
-	text-align: center;
-	color: #FDBA0A;
-	font-size: 13px;
-}
-
-.message--earnings {
-	color: #FDBA0A;
-}
-
-.message--rank {
-	color: #714794;
-}
-.showdownPlayer--cards {
-	display: flex;
-}
-
-.showdownPlayer--earnings {
-	text-align: center;
-}
-
-.showdownPlayer--earnings.positive,
-.message--player {
-	color: #4EB04E;
-}
-
-.showdownPlayer--earnings.negative {
-	color: #97241B;
-}
-
-.poker-table--table-image {
-	width: 100%;
-	height: 100%;
-}
-
-.showdown--nextRound--button {
-	background-color: #6C0C02;
-	border: 1px solid white;
-	color: salmon;
-	padding: 6px;
-	line-height: 1;
-}
-.showdown--nextRound--button:hover {
-	cursor: pointer;
-}
-
-@media (min-width: 1080px) {
-	.poker-table--container {
-		left: 50%;
-		top: 50%;
-		transform: translate(-50%, -50%);
-		width: 1080px;
-		height: 590px;
-	}
-	
-}
-
-
-@media (max-width: 1079px) {
-	.poker-table--container {
-		position: absolute;
-		top: 50%;
-		transform: translateY(-50%);
-		width: 100%;
-		height: auto;
-	}
-	.player-info--bet--container {
-		position: absolute;
-		top: -20px;
-		left: 50%;
-		transform: translateX(-50%);
-		width: 100%;
-		color: whitesmoke;
-		border-radius: 100px;
-		background-color: rgba(0,0,0,10);
-		border: 1px solid white;
-	}
-	.pot-container {
-		top: 55px;
-		right: 20%;
-		left: unset;
-	}
-}
-
-@media (max-width: 736px) {
-	.player-avatar--container {
-		height: 75px;
-		width: 75px;
-	}	
-	.player-info--name {
-		width: 100px;
-	}
-}
-
-@media (max-width: 552px) {
-	.poker-table--container {
-		transform: rotate(90deg);
-	}
-}
-
-
-.loading-overlay {
-	position: absolute;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background-color: rgba(0, 0, 0, 0.1); /* Subtle dimming */
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	z-index: 1000; /* Above game board, below modals if any */
+ .active-in-round {
+	border: 2px solid #4CAF50; /* Green border for active players */
+	border-radius: 5px; /* Optional: Rounded corners */
+	padding: 10px; /* Optional: Add some spacing around the player content */
+	width: 300px; /* Optional: Add some spacing around the player content */
+	box-sizing: border-box; /* Important: Include padding and border in the element's total width and height */
   }
-  
-  /* --- NEW: Suggestion for GameControls CSS (Add this to your CSS file or GameControls component) --- */
-  /* In your CSS file (e.g., App.css or GameControls.css) */
+
+ /* === Utilities === */
+ .loading-overlay {
+     position: absolute;
+     top: 0;
+     left: 0;
+     right: 0;
+     bottom: 0;
+     background-color: rgba(0, 0, 0, 0.2); /* Slightly darker overlay */
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     z-index: 1000;
+ }

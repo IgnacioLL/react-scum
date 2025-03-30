@@ -2,17 +2,17 @@
 import React from 'react';
 import Card from '../cards/Card';
 import HiddenCard from '../cards/HiddenCard';
-import PlayerStatusNotificationBox from "./PlayerStatusNotificationBox"; // Ensure this is imported
+import PlayerStatusNotificationBox from "./PlayerStatusNotificationBox";
 
 const Player = (props) => {
   const {
     player,
     isCurrentPlayer,
-    isStillInRound, // NEW: Prop to indicate if player is active in the current trick/round
+    isStillInRound,
     onCardClick,
     selectedCards,
-    playerAnimationSwitchboard, // For 'Passed' notification
-    endTransition,             // For 'Passed' notification
+    playerAnimationSwitchboard,
+    endTransition,
     arrayIndex
   } = props;
 
@@ -21,104 +21,115 @@ const Player = (props) => {
   const { name, hand, isHuman, avatarURL } = player;
 
   const renderPlayerCards = () => {
-    // ... (card rendering logic remains the same) ...
      if (!hand) return null;
 
     const numCards = hand.length;
-    const maxRotation = 45; // Max angle for the fan (degrees)
-    const cardWidth = 25; // Approx width from CSS
-    const baseYOffset = -10; // How much the fan is lifted
+    // *** REDUCED cardWidth for calculation ***
+    const cardWidth = 24; // Reduced base width for calculation (adjust further if needed)
+    const overlapFactor = 0.65; // Slightly less overlap might help too
+
+    // Limit max overlap distance on very small screens indirectly by reducing cardWidth
+    // A more complex solution might involve window.innerWidth checks, but start simple.
 
     return hand.map((card, index) => {
       const isSelected = !isHuman ? false : selectedCards && selectedCards.some(selCard => selCard.id === card.id);
 
-      // Calculate position for fanning effect
       const centerIndex = (numCards - 1) / 2;
-      const rotation = numCards > 1 ? (index - centerIndex) * (maxRotation / centerIndex) : 0;
-      // Adjust Y offset to create an arc - more offset for outer cards
-      const arcFactor = Math.abs(index - centerIndex);
-      const yOffset = baseYOffset - (arcFactor * 1.5); // Adjust multiplier for more/less arc
-      // Adjust X offset for horizontal spread
-      const xOffset = (index - centerIndex) * (cardWidth * 0.8); // Increased multiplier
+      const xOffset = (index - centerIndex) * (cardWidth * overlapFactor);
 
-      const cardStyle = {
+      // Card container style (absolute positioning)
+      const cardContainerStyle = {
         position: 'absolute',
-        zIndex: index, // Cards in middle overlap outer ones
+        bottom: 0,
+        left: '50%',
+        transformOrigin: 'bottom center',
+        zIndex: index,
         transform: `
-          translateX(${xOffset}px)
-          ${isSelected ? 'translateY(-15px)' : ''}`,
-        transition: 'transform 0.2s ease-out', // Smooth selection animation
+          translateX(${xOffset - (cardWidth / 2)}px) /* Adjust X based on center */
+          ${isSelected ? 'translateY(-10px)' : ''}`, // Reduced lift for smaller cards
+        transition: 'transform 0.2s ease-out',
+        // *** REMOVED fixed height/width - Let CSS control card size ***
+        // height: '50px', // REMOVED
+        // width: `${cardWidth}px`, // REMOVED - CSS will handle this via .playing-card/.robotcard
       };
 
+      // Inner card style (takes full size of container)
+      const cardInnerStyle = {
+          height: '100%', // Takes height from CSS applied to parent
+          width: '100%',  // Takes width from CSS applied to parent
+          pointerEvents: 'auto',
+      };
+
+
       if (!isHuman) {
-        // Render HiddenCard for non-human players
         return (
-          <div key={card.id || `hidden-${index}`} style={cardStyle}> {/* Added fallback key */}
-            <HiddenCard
-              cardData={card} // Pass card data even if not fully used visually
-              applyFoldedClassname={false}
-            />
+          // Apply style to the container div which now relies on CSS for sizing
+          <div key={card.id || `hidden-${index}`} style={cardContainerStyle} className="abscard">
+            <div style={cardInnerStyle}>
+                <HiddenCard
+                  cardData={card}
+                  applyFoldedClassname={false}
+                />
+            </div>
           </div>
         );
       } else {
-        // Render regular Card for human player
         return (
-          <div key={card.id} style={cardStyle}>
-            <Card
-              cardData={card}
-              isSelected={isSelected}
-              onClick={() => onCardClick(card)}
-              applyFoldedClassname={false}
-            />
+          // Apply style to the container div which now relies on CSS for sizing
+          <div key={card.id} style={cardContainerStyle} className="abscard">
+             <div style={cardInnerStyle}>
+                <Card
+                  cardData={card}
+                  isSelected={isSelected}
+                  onClick={() => onCardClick(card)}
+                  applyFoldedClassname={false}
+                />
+            </div>
           </div>
         );
       }
     });
   };
 
-  // Check if the specific player has an active animation
   const ifAnimating = (playerBoxIndex) => {
     return playerAnimationSwitchboard && playerAnimationSwitchboard[playerBoxIndex]?.isAnimating;
   }
 
-  // Add 'active-in-round' class if the player is still playing in this sequence
-  const activeRoundClass = isStillInRound ? ' active-in-round' : '';
-  // Add 'current-player-turn' class if it's their turn
+  const activeStateClass = isStillInRound ? 'active-in-round' : 'inactive-in-round';
   const currentPlayerClass = isCurrentPlayer ? ' current-player-turn' : '';
+  const currentNameClass = isCurrentPlayer ? ' current-player-name-highlight' : '';
 
 
   return (
-    // Add the activeRoundClass here
-    <div className={`player-entity--wrapper p${arrayIndex}${activeRoundClass}${currentPlayerClass}`}>
-      {/* Player Status Notification (for 'Passed') */}
-      {playerAnimationSwitchboard && endTransition &&
-        <PlayerStatusNotificationBox
-          index={arrayIndex}
-          isActive={ifAnimating(arrayIndex)}
-          content={playerAnimationSwitchboard[arrayIndex]?.content || ''}
-          endTransition={endTransition} // Pass the handler down
-        />
-      }
-      {/* Container for the fanned cards */}
-      <div className='abscard player-hand-container'>
-        {renderPlayerCards()}
-      </div>
-      {/* Player Info */}
-      <div className="player-entity--container">
+    // Add 'player-entity-container' for potential future targeting if needed
+    <div className={`player-entity--wrapper p${arrayIndex} ${activeStateClass} ${currentPlayerClass}`}>
+      <div className="player-entity--top">
         <div className="player-avatar--container">
           {avatarURL && <img
-            // Use isCurrentPlayer for the avatar border highlight
             className={`player-avatar--image${(isCurrentPlayer ? ' activePlayer' : '')}`}
             src={avatarURL}
             alt="Player Avatar"
           />}
-          <h5 className="player-info--name">
-            {name}
+          <h5 className={`player-info--name ${currentNameClass}`}>
+            {name} {player.isHuman ? '(You)' : ''} {player.role ? `(${player.role})` : ''}
           </h5>
           <div className="player-info--card-count">
             Cards: {hand ? hand.length : 0}
           </div>
+           {player.finishedRank && <span className="player-info--rank">Rank: {player.finishedRank}</span>}
         </div>
+        {playerAnimationSwitchboard && endTransition &&
+          <PlayerStatusNotificationBox
+            index={arrayIndex}
+            isActive={ifAnimating(arrayIndex)}
+            content={playerAnimationSwitchboard[arrayIndex]?.content || ''}
+            endTransition={endTransition}
+          />
+        }
+      </div>
+      {/* Hand container's height/width will be controlled by CSS */}
+      <div className='player-hand-container'>
+        {renderPlayerCards()}
       </div>
     </div>
   );

@@ -17,7 +17,6 @@ const TablePile = ({ cardsOnTable }) => {
           style={{
             position: 'absolute',
             left: `${index * 15}px`, // Adjust overlap amount
-            top: `${index * 2}px`,   // Slight vertical offset
             zIndex: index,
           }}
         >
@@ -29,7 +28,7 @@ const TablePile = ({ cardsOnTable }) => {
         </div>
       ))}
       {/* Add a label */}
-      <div style={{ position: 'absolute', top: '-20px', left: '0', color: 'white', fontSize: '12px', width: '100%', textAlign: 'center' }}>
+      <div style={{ position: 'absolute', top: '-50px', left: '0', color: 'white', fontSize: '12px', width: '100%', textAlign: 'center' }}>
          Current Pile
       </div>
     </div>
