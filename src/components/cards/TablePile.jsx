@@ -16,7 +16,7 @@ const TablePile = ({ cardsOnTable }) => {
           className="table-card-wrapper"
           style={{
             position: 'absolute',
-            left: `${index * 15}px`, // Adjust overlap amount
+            left: `${(index * 25) - 50}px`, // Adjust overlap amount
             zIndex: index,
           }}
         >

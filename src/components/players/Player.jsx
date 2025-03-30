@@ -24,12 +24,8 @@ const Player = (props) => {
      if (!hand) return null;
 
     const numCards = hand.length;
-    // *** REDUCED cardWidth for calculation ***
-    const cardWidth = 24; // Reduced base width for calculation (adjust further if needed)
-    const overlapFactor = 0.65; // Slightly less overlap might help too
-
-    // Limit max overlap distance on very small screens indirectly by reducing cardWidth
-    // A more complex solution might involve window.innerWidth checks, but start simple.
+    const cardWidth = 36; // Base width, should ideally match CSS
+    const overlapFactor = 0.8; // Reduced from ~0.4-0.5 to increase spacing
 
     return hand.map((card, index) => {
       const isSelected = !isHuman ? false : selectedCards && selectedCards.some(selCard => selCard.id === card.id);
@@ -99,10 +95,16 @@ const Player = (props) => {
   const currentPlayerClass = isCurrentPlayer ? ' current-player-turn' : '';
   const currentNameClass = isCurrentPlayer ? ' current-player-name-highlight' : '';
 
+  // Create a status text to display the player's current status
+  const getPlayerStatusText = () => {
+    if (!isStillInRound) return 'Out of Round';
+    if (isCurrentPlayer) return 'Current Turn';
+    return 'Waiting';
+  };
 
   return (
     // Add 'player-entity-container' for potential future targeting if needed
-    <div className={`player-entity--wrapper p${arrayIndex} ${activeStateClass} ${currentPlayerClass}`}>
+    <div className={`player-entity--wrapper p${arrayIndex} ${activeStateClass}${currentPlayerClass}`}>
       <div className="player-entity--top">
         <div className="player-avatar--container">
           {avatarURL && <img
@@ -110,13 +112,14 @@ const Player = (props) => {
             src={avatarURL}
             alt="Player Avatar"
           />}
-          <h5 className={`player-info--name ${currentNameClass}`}>
+          <h5 className={`player-info--name${currentNameClass}`}>
             {name} {player.isHuman ? '(You)' : ''} {player.role ? `(${player.role})` : ''}
           </h5>
           <div className="player-info--card-count">
             Cards: {hand ? hand.length : 0}
           </div>
            {player.finishedRank && <span className="player-info--rank">Rank: {player.finishedRank}</span>}
+           {!player.finishedRank && <span className="player-info--status">{getPlayerStatusText()}</span>}
         </div>
         {playerAnimationSwitchboard && endTransition &&
           <PlayerStatusNotificationBox

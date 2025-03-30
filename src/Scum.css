@@ -1,406 +1,582 @@
  /* === Base & Full Screen === */
- html,
- body,
- #root,
- .App {
-     width: 100%;
-     height: 100%;
-     margin: 0;
-     padding: 0;
-     overflow: hidden; /* Prevent scrollbars on body */
-     font-family: sans-serif; /* Add a default font */
- }
+html,
+body,
+#root,
+.App {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent scrollbars on body */
+    font-family: sans-serif; /* Add a default font */
+    touch-action: manipulation; /* Prevent double-tap zoom on mobile */
+}
 
- /* === Main Wrapper - Uses Flexbox === */
- .poker-table--wrapper {
-     position: relative;
-     width: 100%;
-     height: 100%;
-     background-image: radial-gradient(#8B0000 60%, #6A0000 82%);
-     display: flex; /* Use flexbox */
-     flex-direction: column; /* Stack table and controls vertically */
-     justify-content: space-between; /* Push table up, controls down */
- }
+/* === Main Wrapper - Uses Flexbox === */
+.poker-table--wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(#8B0000 60%, #6A0000 82%);
+    display: flex; /* Use flexbox */
+    flex-direction: column; /* Stack table and controls vertically */
+    justify-content: space-between; /* Push table up, controls down */
+}
 
- /* Wrapper for error/showdown states */
- .error-container, .showdown-wrapper {
+/* Wrapper for error/showdown states */
+.error-container, .showdown-wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 20px;
     text-align: center;
- }
- .showdown-container--wrapper {
-     color: white;
-     background-color: rgba(0, 0, 0, 0.85);
-     padding: 30px;
-     border-radius: 10px;
-     max-width: 90%;
-     max-height: 90%;
-     overflow-y: auto; /* Allow scrolling if content overflows */
- }
- .showdown-container--wrapper h1 { margin-top: 0; }
- .showdown-container--wrapper button {
-     padding: 10px 20px;
-     font-size: 1em;
-     cursor: pointer;
- }
- .showdown-container--wrapper ol { text-align: left; display: inline-block; }
+}
+.showdown-container--wrapper {
+    color: white;
+    background-color: rgba(0, 0, 0, 0.85);
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow-y: auto; /* Allow scrolling if content overflows */
+}
+.showdown-container--wrapper h1 { margin-top: 0; }
+.showdown-container--wrapper button {
+    padding: 10px 20px;
+    font-size: 1em;
+    cursor: pointer;
+}
+.showdown-container--wrapper ol { text-align: left; display: inline-block; }
 
- /* === Game Table Area === */
- .poker-table--container {
-     position: relative; /* Context for absolute positioned children (players, pile) */
-     flex-grow: 1; /* Takes up available vertical space */
-     width: 100%;
-     /* Removed fixed height/width and centering transforms */
-     /* Use padding to create space from edges if needed */
-     padding: 10px;
-     box-sizing: border-box;
-     min-height: 0; /* Fix potential flexbox overflow issue */
- }
+/* === Game Table Area === */
+.poker-table--container {
+    position: relative; /* Context for absolute positioned children (players, pile) */
+    flex-grow: 1; /* Takes up available vertical space */
+    width: 100%;
+    /* Removed fixed height/width and centering transforms */
+    /* Use padding to create space from edges if needed */
+    padding: 10px;
+    box-sizing: border-box;
+    min-height: 0; /* Fix potential flexbox overflow issue */
+}
 
- /* === Player Positioning (Responsive Percentages) === */
- .p0, .p1, .p2, .p3, .p4 {
-     position: absolute;
-     display: flex;
-     flex-direction: column;
-     align-items: center;
-     /* Adjust width/height based on content or use min/max */
-     width: auto;
-     min-width: 100px; /* Example minimum */
-     transform: translate(-50%, -50%); /* Center elements based on their top/left */
-     /* Default positions (adjust percentages as needed) */
- }
+/* === Player Positioning (Responsive Percentages) === */
+.p0, .p1, .p2, .p3, .p4 {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* Adjust width/height based on content or use min/max */
+    width: auto;
+    min-width: 100px; /* Example minimum */
+    transform: translate(-50%, -50%); /* Center elements based on their top/left */
+    /* Default positions (adjust percentages as needed) */
+}
 
- /* Player positions adjusted for better distribution */
- .p0 { /* Human - Bottom Center */
-     bottom: 5%;  /* Closer to bottom edge */
-     left: 50%;
-     transform: translateX(-50%); /* Only X transform needed if bottom is 0 */
- }
- .p1 { /* Player 2 - Left Middle */
-     top: 50%;
-     left: 5%; /* Closer to left edge */
-     transform: translateY(-50%);
- }
- .p2 { /* Player 3 - Top Left */
-     top: 10%;
-     left: 13%;
-     transform: translate(-50%, 0);
- }
- .p3 { /* Player 4 - Top Right */
-     top: 10%;
-     right: 13%;
-     transform: translate(50%, 0); /* Adjust transform for right */
- }
- .p4 { /* Player 5 - Right Middle */
-     top: 50%;
-     right: 5%; /* Closer to right edge */
-     transform: translateY(-50%);
- }
+/* Player positions adjusted for better distribution */
+.p0 { /* Human - Bottom Center */
+    bottom: 5%;  /* Closer to bottom edge */
+    left: 50%;
+    transform: translateX(-50%); /* Only X transform needed if bottom is 0 */
+}
+.p1 { /* Player 2 - Left Middle */
+    top: 50%;
+    left: 20%; /* Closer to left edge */
+    transform: translateY(-50%);
+}
+.p2 { /* Player 3 - Top Left */
+    top: 10%;
+    left: 25%; /* Increased base spacing */
+    transform: translate(-50%, 0);
+}
+.p3 { /* Player 4 - Top Right */
+    top: 10%;
+    right: 20%; /* Increased base spacing */
+    transform: translate(50%, 0); /* Adjust transform for right */
+}
+.p4 { /* Player 5 - Right Middle */
+    top: 50%;
+    right: 15%; /* Closer to right edge */
+    transform: translateY(-50%);
+}
 
- /* Adjust player positions slightly on smaller screens if needed */
- @media (max-width: 992px) {
-    .p2 { left: 10%; }
-    .p3 { right: 10%; }
-    .p1 { left: 3%; }
-    .p4 { right: 3%; }
- }
- @media (max-width: 768px) {
-    .p0 { bottom: 2%; }
-    .p2 { top: 5%; left: 10%; }
-    .p3 { top: 5%; right: 10%; }
-    /* Adjust card sizes/spacing here too if they overlap */
+/* Player info styling */
+.player-entity--wrapper {
+    max-width: 150px; /* Limit width on small screens */
+    transition: opacity 0.3s ease;
+}
+
+/* Active player styling */
+.player-entity--wrapper.active-in-round {
+    opacity: 1;
+}
+
+/* Inactive player styling */
+.player-entity--wrapper.inactive-in-round {
+    opacity: 0.5;
+}
+
+/* Current player turn highlight */
+.player-entity--wrapper.current-player-turn {
+    opacity: 1;
+}
+
+/* Add a border indicator for active/inactive players */
+.player-entity--top {
+    position: relative;
+    padding: 5px;
+    border-radius: 5px;
+    background-color: rgba(0, 0, 0, 0.4);
+    margin-bottom: 2px; /* Reduced bottom margin */
+    border: 2px solid transparent;
+    transition: border-color 0.3s ease;
+}
+
+.active-in-round .player-entity--top {
+    border-color: #4CAF50; /* Green border for active players */
+}
+
+.inactive-in-round .player-entity--top {
+    border-color: #f44336; /* Red border for inactive players */
+}
+
+.current-player-turn .player-entity--top {
+    border-color: #2196F3; /* Blue border for current player */
+    box-shadow: 0 0 8px rgba(33, 150, 243, 0.6);
+}
+
+.player-info--name {
+    font-size: 1rem; /* Increased base font size */
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    color: white;
+}
+
+.player-info--card-count, .player-info--rank, .player-info--status {
+    font-size: 0.9rem; /* Increased base font size */
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Style for player status indicators */
+.player-info--status {
+    display: inline-block;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-top: 2px;
+    font-weight: bold;
+}
+
+.active-in-round .player-info--status {
+    background-color: rgba(76, 175, 80, 0.3); /* Green background for active players */
+}
+
+.inactive-in-round .player-info--status {
+    background-color: rgba(244, 67, 54, 0.3); /* Red background for inactive players */
+}
+
+.current-player-turn .player-info--status {
+    background-color: rgba(33, 150, 243, 0.3); /* Blue background for current player */
+}
+
+/* Adjust player positions for different screen sizes */
+@media (max-width: 992px) {
+    .p2 { left: 15%; top: 12%; } /* Keep base spacing */
+    .p3 { right: 15%; top: 12%; } /* Keep base spacing */
+    .p1 { left: 4%; }
+    .p4 { right: 4%; }
+}
+ 
+/* Medium screens */
+@media (max-width: 768px) {
+    .p0 { bottom: 3%; }
+    .p2 { top: 8%; left: 20%; } /* Increased spacing */
+    .p3 { top: 8%; right: 20%; } /* Increased spacing */
+    
+    /* Adjust card sizes for medium screens */
     .playing-card {
-        height: 35px;
-        width: 22px;
+        height: 42px; /* Increased */
+        width: 27px; /* Increased */
     }
     .robotcard {
-        height: 35px;
-        width: 22px;
+        height: 42px; /* Increased */
+        width: 27px; /* Increased */
     }
-    /* Adjust hand container height if needed */
-    .player-hand-container { height: 80px; }
-    /* Adjust player info box styling */
- }
+    
+    /* Adjust hand container height */
+    .player-hand-container { height: 90px; } /* Increased */
+    
+    /* Reduce text size */
+    .player-info--name {
+        font-size: 0.9rem; /* Adjusted */
+    }
+    .player-info--card-count, .player-info--rank {
+        font-size: 0.8rem; /* Adjusted */
+    }
+}
+ 
+/* Small screens / mobile */
+@media (max-width: 576px) {
+    /* Adjust player positions for mobile to prevent overlap */
+    .p0 { bottom: 1%; }
+    .p1 { left: 2%; top: 50%; }
+    .p4 { right: 2%; top: 50%; }
+    .p2 { top: 5%; left: 25%; } /* Increased spacing */
+    .p3 { top: 5%; right: 25%; } /* Increased spacing */
+    
+    /* Further reduce card sizes for mobile */
+    .playing-card {
+        height: 36px; /* Increased */
+        width: 24px; /* Increased */
+        font-size: 0.7em;
+    }
+    .robotcard {
+        height: 36px; /* Increased */
+        width: 24px; /* Increased */
+    }
+    
+    /* Reduce hand container size */
+    .player-hand-container { 
+        height: 80px; /* Increased */
+        min-width: 120px;
+    }
+    
+    /* Smaller text for mobile */
+    .player-info--name {
+        font-size: 0.8rem; /* Adjusted */
+    }
+    .player-info--card-count, .player-info--rank {
+        font-size: 0.7rem; /* Adjusted */
+    }
+    
+    /* Adjust game message for mobile */
+    .game-message-container {
+        font-size: 0.85rem;
+        min-width: 150px;
+        padding: 6px 10px;
+    }
+    .game-message-subtext {
+        font-size: 0.75rem;
+    }
+    
+    /* Make buttons more tappable on mobile */
+    .game-controls button {
+        padding: 8px 16px;
+        min-width: 80px;
+    }
+    
+    /* Reduce player wrapper size */
+    .player-entity--wrapper {
+        max-width: 130px; 
+    }
+}
 
- .player-info--name.current-player-name-highlight {
-	color: dodgerblue; /* Or any blue you prefer */
-	font-weight: bold;
-	transition: color 0.3s ease-in-out, font-weight 0.3s ease-in-out;
-	}
+/* Extra small screens */
+@media (max-width: 375px) {
+    .p2 { top: 5%; left: 30%; } /* Increased spacing further */
+    .p3 { top: 5%; right: 30%; } /* Increased spacing further */
+    
+    .player-entity--top {
+        padding: 3px;
+    }
+    
+    .player-info--name {
+        font-size: 0.75rem; /* Adjusted */
+    }
+    .player-info--card-count, .player-info--rank {
+        font-size: 0.65rem; /* Adjusted */
+    }
+    
+    /* Reduce player wrapper size further */
+    .player-entity--wrapper {
+        max-width: 120px; 
+    }
+}
 
+.player-info--name.current-player-name-highlight {
+    color: dodgerblue; /* Or any blue you prefer */
+    font-weight: bold;
+    transition: color 0.3s ease-in-out, font-weight 0.3s ease-in-out;
+}
 
 /* === Community Cards / Table Pile === */
 .community-card-container {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	max-width: 80%; /* Adjust max-width if needed */
-	min-height: 100px; /* Ensure space for larger cards */
-	height: auto; /* Allow height to adjust to content */
-	pointer-events: none;
-	gap: -15px; /* Overlap cards slightly - adjust as needed */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 80%; /* Adjust max-width if needed */
+    min-height: 100px; /* Ensure space for larger cards */
+    height: auto; /* Allow height to adjust to content */
+    pointer-events: none;
+    gap: 10px; /* Changed from -15px to 10px to increase spacing */
 }
 .table-pile-container {
-   /* Styles for the pile itself within the container */
-   display: flex;
-   justify-content: center;
-   align-items: center;
-   flex-wrap: nowrap; /* Prevent wrapping */
+    /* Styles for the pile itself within the container */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap; /* Prevent wrapping */
+    gap: 10px; /* Added gap here too */
 }
 
 /* === Specific Styling for Cards ON THE TABLE PILE === */
 .community-card-container .playing-card {
-   position: relative; /* Override absolute positioning from .abscard if inherited */
-   height: 40px;      /* Larger height */
-   width: 25px;       /* Larger width */
-   box-shadow: 2px 2px 5px rgba(0,0,0,0.4); /* Stronger shadow */
-   /* Remove transform overrides if they cause issues */
-   transform: none !important;
-   margin: 0 -10px; /* Overlap cards horizontally */
+    position: relative; /* Override absolute positioning from .abscard if inherited */
+    height: 50px;      /* Larger height */
+    width: 35px;       /* Larger width */
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.4); /* Stronger shadow */
+    /* Remove transform overrides if they cause issues */
+    transform: none !important;
+    margin: 0; /* Removed negative margin */
 }
 /* Ensure robot cards on pile also get sized */
 .community-card-container .robotcard {
-   position: relative;
-   height: 40px;      /* Larger height */
-   width: 30px;       /* Larger width */
-margin: 0 -10px;
+    position: relative;
+    height: 40px;      /* Larger height */
+    width: 30px;       /* Larger width */
+    margin: 0; /* Removed negative margin */
 }
 
+/* Adjust table pile for mobile */
+@media (max-width: 576px) {
+    .community-card-container .playing-card,
+    .community-card-container .robotcard {
+        height: 35px;
+        width: 22px;
+        margin: 0; /* Removed negative margin */
+    }
+}
 
- /* === Game Message === */
- .game-message-container {
-     position: absolute;
-     top: 15px; /* Position from top */
-     left: 50%;
-     transform: translateX(-50%);
-     color: white;
-     background-color: rgba(0, 0, 0, 0.7);
-     padding: 8px 15px;
-     border-radius: 5px;
-     z-index: 50;
-     text-align: center;
-     min-width: 200px;
-     max-width: 80%;
- }
- .game-message-subtext {
-     font-size: 0.9em;
-     margin-top: 4px;
-     opacity: 0.9;
- }
+/* === Game Message === */
+.game-message-container {
+    position: absolute;
+    top: 15px; /* Position from top */
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 8px 15px;
+    border-radius: 5px;
+    z-index: 50;
+    text-align: center;
+    min-width: 200px;
+    max-width: 80%;
+}
+.game-message-subtext {
+    font-size: 0.9em;
+    margin-top: 4px;
+    opacity: 0.9;
+}
 
- /* === Game Controls Area (Bottom Bar) === */
- .game-controls-area {
-     display: flex;
-     justify-content: space-between; /* Space out buttons and slider */
-     align-items: center;
-     width: 100%;
-     padding: 10px 20px; /* Add padding */
-     background-color: rgba(0, 0, 0, 0.75);
-     box-sizing: border-box;
-     flex-shrink: 0; /* Prevent shrinking */
-     min-height: 60px; /* Ensure minimum height */
- }
- @media (max-width: 600px) {
+/* === Game Controls Area (Bottom Bar) === */
+.game-controls-area {
+    display: flex;
+    justify-content: space-between; /* Space out buttons and slider */
+    align-items: center;
+    width: 100%;
+    padding: 10px 20px; /* Add padding */
+    background-color: rgba(0, 0, 0, 0.75);
+    box-sizing: border-box;
+    flex-shrink: 0; /* Prevent shrinking */
+    min-height: 60px; /* Ensure minimum height */
+}
+
+/* Improve mobile controls layout */
+@media (max-width: 600px) {
     .game-controls-area {
         flex-direction: column; /* Stack controls on small screens */
-        padding: 10px;
+        padding: 8px;
+        gap: 8px;
     }
     .ai-speed-slider-container {
         width: 100%; /* Make slider take full width */
-        margin-top: 10px; /* Add space */
+        margin-top: 5px; /* Add space */
         justify-content: center;
     }
     .game-action-bar {
         justify-content: center; /* Center buttons */
+        width: 100%;
     }
- }
+    .game-controls {
+        width: 100%;
+        justify-content: center;
+    }
+    .game-controls button {
+        flex: 1;
+        max-width: 120px;
+        font-size: 0.9em;
+    }
+}
 
- /* Game Action Bar (Play/Pass buttons) */
- .game-action-bar {
-     display: flex;
-     align-items: center;
-     justify-content: center; /* Center buttons within their space */
-     gap: 15px; /* Space between buttons */
-     /* Removed absolute positioning */
- }
- /* Make sure GameControls component doesn't override flex */
- .game-controls {
+/* Game Action Bar (Play/Pass buttons) */
+.game-action-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center buttons within their space */
+    gap: 15px; /* Space between buttons */
+    /* Removed absolute positioning */
+}
+/* Make sure GameControls component doesn't override flex */
+.game-controls {
     display: flex;
     gap: 15px;
- }
- .game-controls button { /* Basic button styling */
-     padding: 10px 20px;
-     font-size: 1em;
-     border-radius: 5px;
-     border: 1px solid #555;
-     background-color: #333;
-     color: white;
-     cursor: pointer;
-     transition: background-color 0.2s ease;
- }
- .game-controls button:not(:disabled):hover {
-     background-color: #555;
- }
- .game-controls button:disabled {
-     opacity: 0.5;
-     cursor: not-allowed;
- }
- .game-controls .play-button { /* Specific style for play */
+}
+.game-controls button { /* Basic button styling */
+    padding: 10px 20px;
+    font-size: 1em;
+    border-radius: 5px;
+    border: 1px solid #555;
+    background-color: #333;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.game-controls button:not(:disabled):hover {
+    background-color: #555;
+}
+.game-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.game-controls .play-button { /* Specific style for play */
     background-color: #28a745; /* Green */
     border-color: #28a745;
- }
- .game-controls .play-button:not(:disabled):hover {
+}
+.game-controls .play-button:not(:disabled):hover {
     background-color: #218838;
- }
- .game-controls .pass-button { /* Specific style for pass */
-     background-color: #ffc107; /* Yellow/Orange */
-     border-color: #ffc107;
-     color: #333;
- }
- .game-controls .pass-button:not(:disabled):hover {
-     background-color: #e0a800;
- }
+}
+.game-controls .pass-button { /* Specific style for pass */
+    background-color: #ffc107; /* Yellow/Orange */
+    border-color: #ffc107;
+    color: #333;
+}
+.game-controls .pass-button:not(:disabled):hover {
+    background-color: #e0a800;
+}
 
+/* AI Speed Slider */
+.ai-speed-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space elements */
+    color: white;
+    font-size: 0.9em;
+    /* Removed absolute positioning and fixed 'right' */
+    /* Takes remaining space due to justify-content: space-between on parent */
+    flex-basis: 300px; /* Give it a base width, adjust as needed */
+    flex-shrink: 1; /* Allow shrinking */
+    justify-content: flex-end; /* Align items to the right within its space */
+}
+.ai-speed-slider-container label {
+    white-space: nowrap; /* Prevent label wrapping */
+}
+.ai-speed-slider-container input[type="range"] {
+    cursor: pointer;
+    flex-grow: 1; /* Allow slider to take available space */
+    max-width: 150px; /* Limit slider width */
+}
+.ai-speed-slider-container span {
+    min-width: 55px; /* Ensure space for 'xxxx ms' */
+    text-align: right;
+}
 
- /* AI Speed Slider */
- .ai-speed-slider-container {
-     display: flex;
-     align-items: center;
-     gap: 10px; /* Space elements */
-     color: white;
-     font-size: 0.9em;
-     /* Removed absolute positioning and fixed 'right' */
-     /* Takes remaining space due to justify-content: space-between on parent */
-     flex-basis: 300px; /* Give it a base width, adjust as needed */
-     flex-shrink: 1; /* Allow shrinking */
-     justify-content: flex-end; /* Align items to the right within its space */
- }
- .ai-speed-slider-container label {
-     white-space: nowrap; /* Prevent label wrapping */
- }
- .ai-speed-slider-container input[type="range"] {
-     cursor: pointer;
-     flex-grow: 1; /* Allow slider to take available space */
-     max-width: 150px; /* Limit slider width */
- }
- .ai-speed-slider-container span {
-     min-width: 55px; /* Ensure space for 'xxxx ms' */
-     text-align: right;
- }
-
- /* === Player Component & Cards === */
- /* (Keep most of your existing Player, Card, Player Info styles) */
- /* Ensure player hands don't overlap excessively */
- .player-hand-container {
+/* === Player Component & Cards === */
+/* (Keep most of your existing Player, Card, Player Info styles) */
+/* Ensure player hands don't overlap excessively */
+.player-hand-container {
     position: relative;
     display: flex; /* Use flex for card layout */
     justify-content: center; /* Center cards horizontally */
     align-items: flex-end; /* Align cards to bottom for arc effect */
-    height: 100px; /* Adjust as needed */
+    height: 100px; /* Increased base height */
     width: 100%; /* Ensure it spans */
     min-width: 150px; /* Prevent cards collapsing too much */
- }
+}
 
- /* Card absolute positioning for fanning/arcing */
- .abscard {
+/* Card absolute positioning for fanning/arcing */
+.abscard {
     position: absolute;
     bottom: 0; /* Base position for transform */
-    height: 50px; /* Card height */
+    height: 60px; /* Increased base card height */
     transform-origin: bottom center; /* Rotate/translate from bottom center */
     transition: transform 0.2s ease-out; /* Smooth selection */
     /* pointer-events: none; by default on container */
- }
- .abscard > div { /* Target the card element inside */
+}
+.abscard > div { /* Target the card element inside */
     pointer-events: auto; /* Make card clickable */
     height: 100%; /* Ensure clickable area matches visual */
- }
- /* Adjust card size if needed */
- .playing-card {
-     display: flex;
-     flex-direction: column;
-     justify-content: center;
-     align-items: center;
-     background-color: white;
-     font-size: 0.8em; /* Slightly smaller font */
-     height: 100%; /* Inherit from .abscard */
-     width: 30px;  /* Adjust width as needed */
-     border: 1px solid gray;
-     border-radius: 3px;
-     box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
-     user-select: none;
-     overflow: hidden; /* Hide overflow from card content */
- }
- .playing-card.selected {
-     border: 2px solid yellow;
-     box-shadow: 0 0 8px yellow;
-     transform: translateY(-15px) !important; /* Lift selected card, override arc */
- }
+}
+/* Adjust card size if needed */
+.playing-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    font-size: 0.9em; /* Increased base font size */
+    height: 100%; /* Inherit from .abscard */
+    width: 36px;  /* Reverted from 200% to previous value */
+    border: 1px solid gray;
+    border-radius: 3px;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    user-select: none;
+    overflow: hidden; /* Hide overflow from card content */
+}
+.playing-card.selected {
+    border: 2px solid yellow;
+    box-shadow: 0 0 8px yellow;
+    transform: translateY(-15px) !important; /* Lift selected card, override arc */
+}
 
- /* Robot card styling */
- .robotcard {
+/* Robot card styling */
+.robotcard {
     background-color: #890808; /* ... keep your existing background */
     height: 100%; /* Match playing card height via .abscard */
-	width: 30px;  /* Match playing card */
+    width: 36px;  /* Increased base width */
     border: 1px solid #500000;
     border-radius: 3px;
     box-shadow: 1px 1px 2px rgba(0,0,0,0.2);
- }
+}
 
- /* Player Info Box */
- .player-info-box {
-     display: flex;
-     flex-direction: column;
-     align-items: center;
-     color: white;
-     background-color: rgba(0, 0, 0, 0.4);
-     font-size: 0.8em;
-     padding: 5px 8px;
-     border-radius: 4px;
-     margin-bottom: 5px; /* Space between info and hand */
-     text-align: center;
-     min-width: 80px;
- }
- .player-info-box h5 { margin: 2px 0; font-size: 1.1em; }
- .player-info--card-count { font-size: 0.9em; opacity: 0.9; }
+/* Loading overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
 
- /* Highlight current player */
- .player-info-box.current-player-highlight {
-    background-color: rgba(50, 100, 200, 0.6); /* Blueish highlight */
-    box-shadow: 0 0 5px rgba(100, 150, 255, 0.7);
- }
- /* Dim inactive players */
- .player-entity-container.inactive-in-round {
-    opacity: 0.65;
-    transition: opacity 0.3s ease-in-out;
- }
- .player-entity-container.current-player-turn {
-     opacity: 1; /* Ensure current is never dimmed */
- }
+/* Player status notification */
+.player-status-notification {
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    z-index: 10;
+    font-size: 0.9rem;
+}
 
- .active-in-round {
-	border: 2px solid #4CAF50; /* Green border for active players */
-	border-radius: 5px; /* Optional: Rounded corners */
-	padding: 10px; /* Optional: Add some spacing around the player content */
-	width: 300px; /* Optional: Add some spacing around the player content */
-	box-sizing: border-box; /* Important: Include padding and border in the element's total width and height */
-  }
-
- /* === Utilities === */
- .loading-overlay {
-     position: absolute;
-     top: 0;
-     left: 0;
-     right: 0;
-     bottom: 0;
-     background-color: rgba(0, 0, 0, 0.2); /* Slightly darker overlay */
-     display: flex;
-     justify-content: center;
-     align-items: center;
-     z-index: 1000;
- }
+@media (max-width: 576px) {
+    .player-status-notification {
+        font-size: 0.8rem;
+        padding: 3px 8px;
+        top: -25px;
+    }
+}
