@@ -1,0 +1,86 @@
+/* ./components/Leaderboard.css */
+.leaderboard-container {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: rgba(30, 30, 30, 0.9); /* Darker background */
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); /* Darker shadow */
+  max-width: 400px; /* Adjust as needed */
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+  color: #eee; /* Lighter text color for contrast */
+}
+
+.leaderboard-container h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #fff; /* White heading for maximum contrast */
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid #555; /* Darker border */
+  color: #ddd; /* Lighter text color */
+}
+
+.leaderboard-table th {
+  background-color: #444; /* Darker header background */
+  font-weight: bold;
+  color: #fff; /* White header text */
+}
+
+.leaderboard-table td:nth-child(1), /* Rank */
+.leaderboard-table td:nth-child(3) { /* Wins */
+  text-align: center;
+  font-weight: bold;
+  color: #fff; /* White bold text */
+}
+
+.leaderboard-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Style for leaderboard overlay during game */
+.leaderboard-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 500px;
+    background-color: rgba(30, 30, 30, 0.95); /* Darker overlay background */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.7); /* Darker overlay shadow */
+    z-index: 1000; /* Ensure it's above other elements */
+    color: #eee; /* Lighter text color for overlay */
+}
+
+.leaderboard-overlay .leaderboard-container {
+    margin-top: 0;
+    box-shadow: none;
+    max-width: none;
+    background-color: transparent; /* Remove background from nested container */
+}
+
+.leaderboard-overlay button {
+    margin-top: 15px;
+    padding: 8px 15px;
+    background-color: #666; /* Darker button background */
+    color: #fff; /* White button text */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.leaderboard-overlay button:hover {
+  background-color: #888; /* Slightly lighter on hover */
+}

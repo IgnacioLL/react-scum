@@ -21,6 +21,11 @@ body,
     display: flex; /* Use flexbox */
     flex-direction: column; /* Stack table and controls vertically */
     justify-content: space-between; /* Push table up, controls down */
+    /* Improve transitions to prevent flashing */
+    transition: all 0.2s ease-in-out;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    transform: translateZ(0);
 }
 
 /* Wrapper for error/showdown states */
@@ -58,6 +63,11 @@ body,
     padding: 10px;
     box-sizing: border-box;
     min-height: 0; /* Fix potential flexbox overflow issue */
+    /* Add transitions to prevent flashing */
+    transition: all 0.2s ease-in-out;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    transform: translateZ(0);
 }
 
 /* === Player Positioning (Responsive Percentages) === */
@@ -70,7 +80,10 @@ body,
     width: auto;
     min-width: 100px; /* Example minimum */
     transform: translate(-50%, -50%); /* Center elements based on their top/left */
-    /* Default positions (adjust percentages as needed) */
+    /* Add transitions to prevent flashing */
+    transition: all 0.2s ease-in-out;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
 }
 
 /* Player positions adjusted for better distribution */
@@ -315,6 +328,10 @@ body,
     height: auto; /* Allow height to adjust to content */
     pointer-events: none;
     gap: 10px; /* Changed from -15px to 10px to increase spacing */
+    /* Add transitions to prevent flashing */
+    transition: all 0.2s ease-in-out;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
 }
 .table-pile-container {
     /* Styles for the pile itself within the container */
@@ -487,7 +504,6 @@ body,
 }
 
 /* === Player Component & Cards === */
-/* (Keep most of your existing Player, Card, Player Info styles) */
 /* Ensure player hands don't overlap excessively */
 .player-hand-container {
     position: relative;
@@ -497,6 +513,10 @@ body,
     height: 100px; /* Increased base height */
     width: 100%; /* Ensure it spans */
     min-width: 150px; /* Prevent cards collapsing too much */
+    /* Add transitions to prevent flashing */
+    transition: all 0.2s ease-in-out;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
 }
 
 /* Card absolute positioning for fanning/arcing */
@@ -505,7 +525,9 @@ body,
     bottom: 0; /* Base position for transform */
     height: 60px; /* Increased base card height */
     transform-origin: bottom center; /* Rotate/translate from bottom center */
-    transition: transform 0.2s ease-out; /* Smooth selection */
+    transition: all 0.2s ease-out; /* Smooth selection and prevent flashing */
+    will-change: transform, opacity;
+    backface-visibility: hidden;
     /* pointer-events: none; by default on container */
 }
 .abscard > div { /* Target the card element inside */
@@ -579,4 +601,58 @@ body,
         padding: 3px 8px;
         top: -25px;
     }
+}
+
+
+.rules-toggle-button {
+    margin-top: 10px;
+    padding: 8px 15px;
+    border-radius: 5px;
+    border: 1px solid #555;
+    background-color: #333;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.rules-toggle-button:hover {
+    background-color: #555;
+}
+
+.rules-container {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    text-align: left; /* Ensure left alignment within the container */
+    color: #333;
+}
+
+.rules-container h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #0056b3;
+}
+
+.rules-container p {
+    margin-bottom: 10px;
+    line-height: 1.6;
+}
+
+.rules-container ul {
+    padding-left: 20px;
+    margin-bottom: 10px;
+}
+
+.rules-container li {
+    margin-bottom: 5px;
+}
+
+.rules-container ul li {
+    list-style-type: disc; /* Use disc bullets for unordered lists */
+}
+
+.rules-container ol li {
+    list-style-type: decimal; /* Use numbers for ordered lists */
 }

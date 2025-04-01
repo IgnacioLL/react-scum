@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { renderUnicodeSuitSymbol } from '../../utils/ui'; // Keep this utility
 
-const Card = (props) => {
+const Card = memo((props) => {
   const {
     cardData, // Contains suit, cardFace, value, id, animationDelay
     isSelected, // New prop to indicate selection
@@ -30,7 +30,13 @@ const Card = (props) => {
     <div
       key={cardData.id} // Use the unique ID
       className={`playing-card cardIn${selectedClass}${foldedClass}`}
-      style={{ animationDelay: `${applyFoldedClassname ? 0 : animationDelay || 0}ms` }}
+      style={{ 
+        animationDelay: `${applyFoldedClassname ? 0 : animationDelay || 0}ms`,
+        transition: 'all 0.2s ease-in-out', // Smooth transition
+        willChange: 'transform, opacity', // Performance hint
+        backfaceVisibility: 'hidden', // Prevent flashing
+        transform: 'translateZ(0)' // Force GPU acceleration
+      }}
       onClick={onClick} // Call the passed onClick handler
     >
       <h6 style={{ color: color }}>
@@ -38,6 +44,6 @@ const Card = (props) => {
       </h6>
     </div>
   );
-};
+});
 
 export default Card;
