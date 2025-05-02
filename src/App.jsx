@@ -11,7 +11,7 @@ import Leaderboard from './components/Leaderboard';
 
 import GameControls from "./components/GameControls";
 
-const API_URL = 'http://176.84.229.17:5000'; // Replace with your actual API URL if different
+const API_URL = 'http://83.42.20.189:5000'; // Replace with your actual API URL if different
 
 class App extends Component {
   state = {
