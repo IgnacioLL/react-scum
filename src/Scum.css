@@ -124,27 +124,26 @@ body,
     grid-column: 1 / 2;
     grid-row: 2 / 3;
     justify-self: right; /* Center horizontally in cell */
-    align-self: center; /* Center vertically */
+    align-self: end; /* Changed from center to end to lower position */
     margin-right: 10px;
 }
 .p2 { /* Player 3 - Top Left */
     grid-column: 1 / 2;
     grid-row: 1 / 2;
     justify-self: right; /* Center horizontally */
-    align-self: start; /* Align to top */
-    
+    align-self: end; /* Changed from start to end to lower position */
 }
 .p3 { /* Player 4 - Top Right */
     grid-column: 3 / 4;
     grid-row: 1 / 2;
-    justify-self: left  ; /* Center horizontally */
-    align-self: start; /* Align to top */
+    justify-self: left; /* Center horizontally */
+    align-self: end; /* Changed from start to end to lower position */
 }
 .p4 { /* Player 5 - Right Middle */
     grid-column: 3 / 4;
     grid-row: 2 / 3;
     justify-self: left; /* Center horizontally */
-    align-self: center; /* Center vertically */
+    align-self: end; /* Changed from center to end to lower position */
 }
 
 /* Player info styling remains largely the same */
@@ -489,6 +488,3 @@ body,
     font-weight: bold;
     transition: color 0.3s ease-in-out, font-weight 0.3s ease-in-out;
 }
-
-
- 
