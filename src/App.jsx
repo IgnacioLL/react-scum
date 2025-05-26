@@ -8,6 +8,7 @@ import Player from './components/players/Player';
 import TablePile from './components/cards/TablePile';
 import Spinner from './Spinner';
 import Leaderboard from './components/Leaderboard';
+import ModelOpinion from './components/ModelOpinion';
 
 import GameControls from "./components/GameControls";
 
@@ -37,6 +38,10 @@ class App extends Component {
     showLeaderboard: false, // Control leaderboard visibility
     isTransitioning: false, // Add this to control transitions and prevent flashing
     showRules: false, // New state for showing the rules
+    modelOpinionData: null,
+    modelOpinionLoading: false,
+    showModelOpinion: false,
+    aiPaused: false, // New state to track if AI turns are paused
   };
 
   componentDidMount() {
@@ -160,10 +165,13 @@ class App extends Component {
     // Update state in a single batch to prevent multiple re-renders
     this.setState(newState, () => {
       // Schedule AI Turn if needed
-      const { gamePhase, players, currentPlayerIndex, humanPlayerId, aiTurnDelay } = this.state;
+      const { gamePhase, players, currentPlayerIndex, humanPlayerId, aiTurnDelay, aiPaused } = this.state;
       if (gamePhase === 'playing' && currentPlayerIndex !== -1) {
         const currentPlayer = players[currentPlayerIndex];
-        if (currentPlayer && currentPlayer.id !== humanPlayerId && currentPlayer.isStillInRound) {
+        if (currentPlayer && 
+            currentPlayer.id !== humanPlayerId && 
+            currentPlayer.isStillInRound && 
+            !aiPaused) { // Only schedule if AI is not paused
           console.log(`Scheduling AI turn for ${currentPlayer.name} (ID: ${currentPlayer.id}) in ${aiTurnDelay}ms`);
           const timerId = setTimeout(this.triggerAiTurn, aiTurnDelay);
           this.setState({ aiTurnTimerId: timerId });
@@ -348,6 +356,20 @@ class App extends Component {
      }
   };
 
+  handleStopGame = () => {
+    // Clear any timers
+    if (this.state.aiTurnTimerId) {
+      clearTimeout(this.state.aiTurnTimerId);
+    }
+    
+    // Pause the game by setting a new state
+    this.setState({
+      gamePhase: 'paused',
+      loading: false,
+      aiTurnTimerId: null,
+    });
+  };
+
   // --- AI Speed Slider (unchanged) ---
   handleDelayChange = (event) => {
     const newDelay = parseInt(event.target.value, 10);
@@ -403,6 +425,69 @@ class App extends Component {
       this.setState(prevState => ({ showRules: !prevState.showRules }));
   };
 
+  fetchModelOpinion = async () => {
+    const { gameId, loading } = this.state;
+    
+    if (!gameId || loading) {
+      console.warn("Cannot fetch model opinion: game not active or already loading");
+      return;
+    }
+    
+    console.log("--- Fetching Model Opinion ---");
+    this.setState({ modelOpinionLoading: true, error: null });
+    
+    const data = await this.fetchApi('/game/model-opinion', 'POST', { gameId });
+    
+    if (data) {
+      console.log("--- Received Model Opinion ---", data);
+      this.setState({ 
+        modelOpinionData: data, 
+        modelOpinionLoading: false,
+        showModelOpinion: true 
+      });
+    } else {
+      // Error handled by fetchApi, just turn off loading
+      this.setState({ modelOpinionLoading: false });
+    }
+  };
+
+  toggleModelOpinion = () => {
+    this.setState(prevState => ({ showModelOpinion: !prevState.showModelOpinion }));
+    // Fetch new opinion data when opening
+    if (!this.state.showModelOpinion) {
+      this.fetchModelOpinion();
+    }
+  };
+
+  // --- AI Pause Logic ---
+  toggleAiPaused = () => {
+    this.setState(prevState => {
+      const newPausedState = !prevState.aiPaused;
+      
+      // If we're unpausing and it's an AI's turn, schedule their turn
+      if (!newPausedState && 
+          prevState.gamePhase === 'playing' && 
+          prevState.currentPlayerIndex !== -1) {
+        const currentPlayer = prevState.players[prevState.currentPlayerIndex];
+        if (currentPlayer && 
+            currentPlayer.id !== prevState.humanPlayerId && 
+            currentPlayer.isStillInRound && 
+            !prevState.aiTurnTimerId) {
+          console.log(`Resuming AI turn for ${currentPlayer.name} with delay ${prevState.aiTurnDelay}ms`);
+          const timerId = setTimeout(this.triggerAiTurn, prevState.aiTurnDelay);
+          return { aiPaused: newPausedState, aiTurnTimerId: timerId };
+        }
+      }
+      
+      // If we're pausing, clear any scheduled AI turns
+      if (newPausedState && prevState.aiTurnTimerId) {
+        clearTimeout(prevState.aiTurnTimerId);
+        return { aiPaused: newPausedState, aiTurnTimerId: null };
+      }
+      
+      return { aiPaused: newPausedState };
+    });
+  };
 
   // --- Render Methods ---
 
@@ -445,6 +530,7 @@ class App extends Component {
       <GameControls
         onPlayClick={this.handlePlayCards}
         onPassClick={this.handlePass}
+        onStopClick={this.handleStopGame}
         canPlay={canPlay}
         canPass={canPass}
         disabled={loading} // Disable buttons when loading
@@ -459,7 +545,8 @@ class App extends Component {
     const {
         loading, gamePhase, cardsOnTable, gameMessage, error, players,
         activePlayerCount, aiTurnDelay, playerNameInput, humanPlayerName,
-        leaderboardData, leaderboardLoading, showLeaderboard, showRules
+        leaderboardData, leaderboardLoading, showLeaderboard, showRules,
+        modelOpinionData, modelOpinionLoading, showModelOpinion
     } = this.state;
     const totalPlayerCount = players.length;
 
@@ -523,6 +610,46 @@ class App extends Component {
                 </div>
             </div>
         );
+    }
+
+    // Add this condition after the nameInput phase check and before the loading phase check
+    if (gamePhase === 'paused') {
+      return (
+        <div className="App">
+          <div className='poker-table--wrapper paused-game-wrapper'>
+            <h1>Game Paused</h1>
+            <div className="paused-game-controls">
+              <button 
+                onClick={() => this.setState({ gamePhase: 'playing' })}
+                className="resume-button"
+              >
+                Resume Game
+              </button>
+              <button 
+                onClick={() => this.setState({
+                  gamePhase: 'nameInput',
+                  error: null,
+                  loading: false,
+                  aiTurnTimerId: null,
+                  players: [], // Clear previous game data
+                  cardsOnTable: [],
+                  currentPlayerIndex: -1,
+                  selectedCards: [],
+                  gameId: null,
+                  activePlayerCount: 0,
+                  playerAnimationSwitchboard: {},
+                  showLeaderboard: false,
+                  showRules: false,
+                  showModelOpinion: false,
+                })}
+                className="quit-button"
+              >
+                Quit Game
+              </button>
+            </div>
+          </div>
+        </div>
+      );
     }
 
     // --- Loading Phase (Initial Game Load) ---
@@ -617,14 +744,35 @@ class App extends Component {
             <div className='game-controls-area'>
                 <div className='game-action-bar'>
                    {this.renderGameControls()}
-                </div>
-                <div className='ai-speed-slider-container'>
-                  <label htmlFor="aiSpeed">AI Speed:</label>
-                  <input
-                    type="range" id="aiSpeed" name="aiSpeed" min="10" max="5000" step="10"
-                    value={aiTurnDelay} onChange={this.handleDelayChange} disabled={loading}
-                  />
-                  <span>{aiTurnDelay} ms</span>
+                   <div className="ai-controls-container">
+                     <button 
+                       onClick={this.toggleAiPaused} 
+                       className={`ai-pause-button ${this.state.aiPaused ? 'ai-paused' : ''}`}
+                     >
+                       {this.state.aiPaused ? 'Resume AI' : 'Pause AI'}
+                     </button>
+                     <div className="ai-speed-slider-container">
+                       <label htmlFor="ai-speed">AI Speed:</label>
+                       <input
+                         id="ai-speed"
+                         type="range"
+                         min="100"
+                         max="3000"
+                         step="100"
+                         value={aiTurnDelay}
+                         onChange={this.handleDelayChange}
+                         disabled={this.state.aiPaused}
+                       />
+                       <span>{aiTurnDelay}ms</span>
+                     </div>
+                   </div>
+                   <button 
+                     onClick={this.toggleModelOpinion} 
+                     className="hint-button" 
+                     disabled={loading || modelOpinionLoading}
+                   >
+                     {modelOpinionLoading ? 'Loading...' : 'Get Hint'}
+                   </button>
                 </div>
                  {/* Leaderboard Toggle Button (optional during game) */}
                  <button onClick={this.toggleLeaderboard} className="leaderboard-toggle-button small" disabled={leaderboardLoading}>
@@ -634,12 +782,13 @@ class App extends Component {
             </div>
            )} {/* End game-controls-area */}
 
-            {/* Leaderboard Display (Modal or separate section) */}
-            {showLeaderboard && gamePhase === 'playing' && (
-                <div className="leaderboard-overlay"> {/* Style this as a modal */}
-                    <Leaderboard data={leaderboardData} loading={leaderboardLoading} />
-                    <button onClick={this.toggleLeaderboard}>Close</button>
-                </div>
+            {/* Model Opinion Display */}
+            {showModelOpinion && (
+              <ModelOpinion 
+                data={modelOpinionData} 
+                loading={modelOpinionLoading} 
+                onClose={this.toggleModelOpinion} 
+              />
             )}
 
         </div> {/* End poker-table--wrapper */}

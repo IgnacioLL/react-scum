@@ -58,92 +58,204 @@ body,
 /* === Game Table Area === */
 /* === Game Table Area (NOW A GRID CONTAINER) === */
 .poker-table--container {
-    flex-grow: 1; /* Takes up available vertical space */
+    flex-grow: 1;
     width: 100%;
-    min-height: 0; /* Fix potential flexbox overflow issue */
+    min-height: 0;
     box-sizing: border-box;
-    padding: 10px; /* Padding around the grid */
-
-    display: grid;
-    /* Define a 3x3 grid */
-    /* Columns: Left player area, Center pile area, Right player area */
-    /* Rows: Top players, Center pile/players, Bottom player */
-    grid-template-columns: minmax(100px, 1fr) minmax(150px, 2fr) minmax(100px, 1fr); /* Adjust min/max/fractions as needed */
-    grid-template-rows: minmax(100px, 1fr) minmax(100px, auto) minmax(100px, 1fr); /* Adjust min/max/auto as needed */
-    gap: 10px; /* Space between grid cells */
-
-    /* Center items within their cells by default (can be overridden) */
-    align-items: center;
-    justify-items: center;
-
-    /* Transitions/Performance */
-    transition: all 0.2s ease-in-out;
-    will-change: transform, opacity;
-    backface-visibility: hidden;
-    transform: translateZ(0);
+    padding: 10px;
+    position: relative; /* Make it a positioning context */
 }
-/* === Player Positioning (Responsive Percentages) === */
+
+/* === Player Positioning with Responsive Approach === */
 .p0, .p1, .p2, .p3, .p4 {
-    position: absolute;
+    position: absolute; /* Keep absolute positioning */
     display: flex;
     flex-direction: column;
     align-items: center;
     width: auto;
-    /* Use min-width cautiously, maybe remove/reduce for mobile */
-    min-width: 80px; /* Reduced base min-width */
-    transform: translate(-50%, -50%); /* Center elements based on their top/left */
+    max-width: 180px;
+    min-width: 80px;
+    height: fit-content;
     transition: all 0.2s ease-in-out;
     will-change: transform, opacity;
     backface-visibility: hidden;
-    z-index: 10; /* Ensure players are above pile visually if overlap occurs */
+    z-index: 10;
 }
 
-.p0, .p1, .p2, .p3, .p4 {
-    /* REMOVED: position: absolute, top, left, right, bottom, transform */
+/* Position each player with percentage-based positioning */
+.p0 { /* Human - Bottom */
+    bottom: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.p1 { /* Left Middle */
+    left: 10%;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.p2 { /* Top Left */
+    top: 8%;
+    left: 25%; /* Moved more to the left */
+    transform: translateX(-50%);
+}
+
+.p3 { /* Top Right */
+    top: 8%;
+    right: 25%; /* Moved more to the right */
+    transform: translateX(50%);
+}
+
+.p4 { /* Right Middle */
+    right: 10%;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Media queries for different screen sizes */
+@media (max-width: 768px) {
+    /* Adjust positions for tablets */
+    .p1 { left: 5%; }
+    .p4 { right: 5%; }
+    .p2 { left: 20%; } /* More separation */
+    .p3 { right: 20%; } /* More separation */
+    
+    /* Make cards even smaller on tablets */
+    .community-card-container .playing-card,
+    .community-card-container .robotcard,
+    .player-hand-container .playing-card,
+    .player-hand-container .robotcard {
+        width: 6vmin;
+        height: 8.4vmin;
+        min-width: 25px;
+        min-height: 35px;
+    }
+    
+    /* Human player cards on tablets */
+    .player-entity--wrapper.human-player .playing-card {
+        width: 8vmin;
+        height: 11.2vmin;
+        min-width: 35px;
+        min-height: 49px;
+    }
+}
+
+/* For very small screens - adjust card size and overlap */
+@media (max-width: 480px) {
+    /* Lower the main player position */
+    .p0 { 
+        bottom: 2%;
+    }
+    
+    .p2 { left: 15%; top: 6%; }
+    .p3 { right: 15%; top: 6%; }
+    
+    /* AI player cards on mobile */
+    .community-card-container .playing-card,
+    .community-card-container .robotcard,
+    .player-hand-container .playing-card,
+    .player-hand-container .robotcard {
+        width: 6vmin;
+        height: 8.4vmin;
+        min-width: 28px;
+        min-height: 39px;
+    }
+    
+    /* Make human player cards TWICE as big on mobile */
+    .player-entity--wrapper.human-player .playing-card {
+        width: 14vmin;
+        height: 19.6vmin;
+        min-width: 60px;
+        min-height: 84px;
+        max-width: 80px;
+        max-height: 112px;
+    }
+    
+    /* Extreme overlap for AI player cards */
+    .player-entity--wrapper .abscard {
+        margin-right: -20px; /* Much more overlap */
+    }
+    
+    /* Extreme overlap for human player cards */
+    .player-entity--wrapper.human-player .abscard {
+        margin-right: -40px; /* Extreme overlap for human player */
+    }
+    
+    /* Ensure human player hand container is tall enough for larger cards */
+    .player-entity--wrapper.human-player .player-hand-container {
+        height: 100px;
+        margin-bottom: 10px;
+    }
+    
+    /* Make controllers WAY smaller on mobile */
+    .game-controls--container button,
+    .action-button,
+    .pass-button,
+    .play-button,
+    .hint-button,
+    .ai-pause-button,
+    .game-utility-buttons button {
+        padding: 2px 4px; /* Extremely small padding */
+        font-size: 0.6rem; /* Very small font */
+        height: auto;
+        min-height: 18px; /* Reduced minimum height */
+        min-width: 40px; /* Reduced minimum width */
+        margin: 0; /* Remove any margins */
+    }
+    
+    /* Make the game controls container much smaller */
+    .game-controls--container {
+        padding: 3px; /* Minimal padding */
+        gap: 3px; /* Minimal gap between buttons */
+        max-height: 30px; /* Limit the height */
+    }
+    
+    /* Adjust utility buttons */
+    .game-utility-buttons {
+        gap: 2px; /* Minimal gap */
+    }
+    
+    /* Reduce the size of AI controls */
+    .ai-controls-container {
+        gap: 4px;
+        margin-left: 3px;
+    }
+    
+    /* Adjust the table pile container for larger human cards */
+    .table-pile-container {
+        height: 100px;
+        margin-bottom: 10px;
+    }
+    
+    /* Make the game message smaller */
+    .game-message-container {
+        font-size: 0.7rem;
+        padding: 3px 6px;
+        min-width: 120px;
+    }
+    
+    .game-message-subtext {
+        font-size: 0.6rem;
+        margin-top: 2px;
+    }
+}
+
+/* Center the community cards */
+.community-card-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%; /* Take width of grid cell */
-    max-width: 180px; /* Limit max width */
-    min-width: 80px; /* Set a minimum */
-    height: fit-content; /* Size based on content */
-    /* Transitions/Performance */
+    justify-content: center;
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    pointer-events: none;
     transition: all 0.2s ease-in-out;
     will-change: transform, opacity;
     backface-visibility: hidden;
-}
-
-
-/* Assign players to grid cells */
-.p0 { /* Human - Bottom Center */
-    grid-column: 2 / 3;
-    grid-row: 3 / 3;
-    align-self: end; /* Align to bottom of cell */
-}
-.p1 { /* Player 2 - Left Middle */
-    grid-column: 1 / 2;
-    grid-row: 2 / 3;
-    justify-self: right; /* Center horizontally in cell */
-    align-self: end; /* Changed from center to end to lower position */
-    margin-right: 10px;
-}
-.p2 { /* Player 3 - Top Left */
-    grid-column: 1 / 2;
-    grid-row: 1 / 2;
-    justify-self: right; /* Center horizontally */
-    align-self: end; /* Changed from start to end to lower position */
-}
-.p3 { /* Player 4 - Top Right */
-    grid-column: 3 / 4;
-    grid-row: 1 / 2;
-    justify-self: left; /* Center horizontally */
-    align-self: end; /* Changed from start to end to lower position */
-}
-.p4 { /* Player 5 - Right Middle */
-    grid-column: 3 / 4;
-    grid-row: 2 / 3;
-    justify-self: left; /* Center horizontally */
-    align-self: end; /* Changed from center to end to lower position */
 }
 
 /* Player info styling remains largely the same */
@@ -204,49 +316,40 @@ body,
 .current-player-turn .player-info--status { background-color: rgba(33, 150, 243, 0.3); }
 
 /* === Community Cards / Table Pile (Grid Item) === */
-.community-card-container {
-    /* REMOVED: position: absolute, top, left, transform */
-    grid-column: 2 / 3; /* Center column */
-    grid-row: 1 / 3;    /* Center row */
-    justify-self: center; /* Ensure horizontal centering */
-
-    display: flex;
-    justify-content: center;
-    max-width: 0%; /* Limit width */
-    height: auto;
-    pointer-events: none;
-    /* Transitions/Performance */
-    transition: all 0.2s ease-in-out;
-    will-change: transform, opacity;
-    backface-visibility: hidden;
-}
 .table-pile-container {
-    /* Styles for the pile itself within the container */
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-wrap: nowrap;
-    gap: 5px; /* Match container gap */
+    width: 100%;
+    height: 120px; /* Reduced from 150px */
 }
 /* === Specific Styling for Cards ON THE TABLE PILE === */
-/* Card styling ON THE PILE remains the same */
+/* Card styling ON THE PILE - INCREASED SIZE */
 .community-card-container .playing-card,
-.community-card-container .robotcard {
-    position: relative; /* Keep relative within flex container */
+.community-card-container .robotcard,
+.player-hand-container .playing-card,
+.player-hand-container .robotcard {
+    position: relative;
     flex-shrink: 0;
     box-shadow: 1px 1px 3px rgba(0,0,0,0.4);
-    margin: 0; /* Remove any default margin */
+    margin: 0;
 
-    /* --- Responsive Sizing for Table Cards --- */
-    width: 7vmin; /* Slightly smaller base size */
-    height: 10vmin; /* Maintain aspect ratio (approx 1.4) */
-    min-width: 24px; /* Prevent getting too tiny */
-    min-height: 34px;
-    max-width: 35px; /* Limit size on large screens */
-    max-height: 49px;
-    /* --- End Responsive Sizing --- */
+    /* Base sizing for tablets (works well on iPad) */
+    width: 7vmin;
+    height: 9.8vmin;
+    min-width: 30px;
+    min-height: 42px;
+    max-width: 40px;
+    max-height: 56px;
 }
 
+/* Add a subtle highlight to the human player's area */
+.player-entity--wrapper.human-player {
+    padding-bottom: 10px;
+    border-radius: 10px;
+    background-color: rgba(255, 255, 255, 0.05);
+}
 
 /* === Game Message (Keep Absolute Positioning) === */
 .game-message-container {
@@ -295,7 +398,8 @@ body,
 }
 .game-controls {
     display: flex;
-    gap: 10px; /* Reduced gap */
+    gap: 8px;
+    align-items: center;
 }
 .game-controls button {
     padding: 8px 16px; /* Adjusted padding */
@@ -346,10 +450,10 @@ body,
     width: 100%; /* Takes width from parent player element */
     max-width: 280px; /* Limit how wide the fan can get */
     min-width: 100px;
-    height: 11vmin; /* Responsive height based on viewport */
+    height: 70px; /* Reduced height for all players */
     min-height: 60px; /* Minimum height */
     max-height: 90px; /* Maximum height */
-    margin-top: -40px; /* Add some space between info and hand */
+    margin-top: 10px;
     /* Transitions/Performance */
     transition: all 0.2s ease-in-out;
     will-change: transform, opacity;
@@ -363,8 +467,8 @@ body,
     position: absolute; /* KEEP ABSOLUTE for fanning effect */
     bottom: 0;
     /* --- Responsive Sizing for Hand Cards --- */
-    width: 5vmin;       /* Base responsive width */
-    height: 7vmin;     /* Base responsive height (maintain aspect ratio ~1.4) */
+    width: 7vmin;       /* Base responsive width */
+    height: 10vmin;     /* Base responsive height (maintain aspect ratio ~1.4) */
     min-width: 25px;    /* Minimum size */
     min-height: 30px;
     max-width: 70px;    /* Maximum size */
@@ -375,6 +479,7 @@ body,
     will-change: transform, opacity;
     backface-visibility: hidden;
     /* JS will add transform: rotate/translate */
+    margin-right: -10px; /* Reduced overlap for smaller cards */
 }
 .abscard > div { pointer-events: auto; height: 100%; }
 
@@ -400,10 +505,10 @@ body,
     box-sizing: border-box;
 }
 /* Add styles for rank/suit if they exist and need sizing */
-.playing-card h6 { /* Target the text element */
-    font-size: 1em; /* Inherit calculated size from .playing-card */
+.playing-card h6 {
+    font-size: 1rem; /* Increased from default size */
+    margin: 5px;
     line-height: 1.2; /* Adjust line height */
-    margin: 0;
     padding: 0 1px; /* Minimal horizontal padding */
     white-space: nowrap; /* Prevent wrapping */
 }
@@ -487,4 +592,269 @@ body,
     color: #4dabf7; /* Lighter blue for better contrast on dark bg */
     font-weight: bold;
     transition: color 0.3s ease-in-out, font-weight 0.3s ease-in-out;
+}
+
+/* Add this to your Scum.css file */
+.game-utility-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.hint-button {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.hint-button:hover:not(:disabled) {
+  background-color: #138496;
+}
+
+.hint-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Add this to your Scum.css file */
+.stop-button {
+  background-color: #dc3545; /* Red color for stop/danger */
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  margin-left: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.stop-button:hover {
+  background-color: #c82333; /* Darker red on hover */
+}
+
+/* Paused Game Screen */
+.paused-game-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+}
+
+.paused-game-controls {
+  display: flex;
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.resume-button, .quit-button {
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.resume-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+}
+
+.resume-button:hover {
+  background-color: #218838;
+}
+
+.quit-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+}
+
+.quit-button:hover {
+  background-color: #c82333;
+}
+
+/* AI Controls Container */
+.ai-controls-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: 10px;
+}
+
+/* AI Pause Button */
+.ai-pause-button {
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.ai-pause-button:hover {
+    background-color: #5a6268;
+}
+
+.ai-pause-button.ai-paused {
+    background-color: #28a745;
+}
+
+.ai-pause-button.ai-paused:hover {
+    background-color: #218838;
+}
+
+/* Make human player cards slightly bigger than AI cards */
+.player-entity--wrapper.human-player .playing-card {
+    width: 9vmin;
+    height: 12.6vmin;
+    min-width: 40px;
+    min-height: 56px;
+    max-width: 55px;
+    max-height: 77px;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+}
+
+/* Adjust spacing for all player cards */
+.player-entity--wrapper .abscard {
+    margin-right: -10px;
+}
+
+/* Adjust spacing for human player cards */
+.player-entity--wrapper.human-player .abscard {
+    margin-right: -15px;
+}
+
+/* Ensure the human player's hand container is tall enough */
+.player-entity--wrapper.human-player .player-hand-container {
+    height: 90px;
+    margin-top: 15px;
+}
+
+/* === LARGE SCREENS (desktops, large monitors) === */
+@media (min-width: 1200px) {
+    /* Larger cards for big screens */
+    .community-card-container .playing-card,
+    .community-card-container .robotcard,
+    .player-hand-container .playing-card,
+    .player-hand-container .robotcard {
+        width: 9vmin;
+        height: 12.6vmin;
+        min-width: 40px;
+        min-height: 56px;
+        max-width: 55px;
+        max-height: 77px;
+    }
+    
+    /* Even larger cards for human player on big screens */
+    .player-entity--wrapper.human-player .playing-card {
+        width: 11vmin;
+        height: 15.4vmin;
+        min-width: 50px;
+        min-height: 70px;
+        max-width: 70px;
+        max-height: 98px;
+    }
+    
+    /* Adjust spacing for larger cards */
+    .player-entity--wrapper .abscard {
+        margin-right: -15px;
+    }
+    
+    .player-entity--wrapper.human-player .abscard {
+        margin-right: -20px;
+    }
+    
+    /* Taller containers for larger cards */
+    .player-hand-container {
+        height: 90px;
+    }
+    
+    .player-entity--wrapper.human-player .player-hand-container {
+        height: 110px;
+    }
+    
+    /* Larger table pile area */
+    .table-pile-container {
+        height: 140px;
+    }
+    
+    /* Adjust player positions for better spacing on large screens */
+    .p2 { left: 30%; }
+    .p3 { right: 30%; }
+}
+
+/* === TABLETS (iPad, medium screens) === */
+/* Current styling works well for tablets - no changes needed */
+
+/* === MOBILE PHONES (small screens) === */
+@media (max-width: 480px) {
+    /* Smaller cards for mobile */
+    .community-card-container .playing-card,
+    .community-card-container .robotcard,
+    .player-hand-container .playing-card,
+    .player-hand-container .robotcard {
+        width: 5vmin;
+        height: 7vmin;
+        min-width: 20px;
+        min-height: 28px;
+        max-width: 30px;
+        max-height: 42px;
+    }
+    
+    /* Slightly larger cards for human player on mobile */
+    .player-entity--wrapper.human-player .playing-card {
+        width: 7vmin;
+        height: 9.8vmin;
+        min-width: 30px;
+        min-height: 42px;
+        max-width: 40px;
+        max-height: 56px;
+    }
+    
+    /* Adjust spacing for smaller cards */
+    .player-entity--wrapper .abscard {
+        margin-right: -5px;
+    }
+    
+    .player-entity--wrapper.human-player .abscard {
+        margin-right: -8px;
+    }
+    
+    /* Shorter containers for smaller cards */
+    .player-hand-container {
+        height: 50px;
+    }
+    
+    .player-entity--wrapper.human-player .player-hand-container {
+        height: 70px;
+    }
+    
+    /* Smaller table pile area */
+    .table-pile-container {
+        height: 90px;
+    }
+    
+    /* Adjust player positions for better spacing on small screens */
+    .p2 { left: 15%; top: 6%; }
+    .p3 { right: 15%; top: 6%; }
+    .p0 { bottom: 6%; }
+    .p1 { left: 2%; }
+    .p4 { right: 2%; }
+    
+    /* Smaller font for card values */
+    .playing-card h6 {
+        font-size: 0.7rem;
+        margin: 2px;
+    }
 }

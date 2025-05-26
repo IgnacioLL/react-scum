@@ -1,5 +1,5 @@
 // ./components/players/Player.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import Card from '../cards/Card';
 import HiddenCard from '../cards/HiddenCard';
 import PlayerStatusNotificationBox from "./PlayerStatusNotificationBox";
@@ -16,20 +16,51 @@ const Player = (props) => {
     arrayIndex
   } = props;
 
+  // Add state to track card visibility for non-human players
+  const [showOpponentCards, setShowOpponentCards] = useState(false);
+
+  // Toggle function for opponent cards visibility
+  const toggleOpponentCards = (e) => {
+    if (!player.isHuman) {
+      e.stopPropagation(); // Prevent event bubbling
+      setShowOpponentCards(prev => !prev);
+    }
+  };
+
   if (!player) return null;
 
   const { name, hand, isHuman, avatarURL } = player;
 
   const renderPlayerCards = () => {
-     if (!hand) return null;
+    if (!hand) return null;
 
-    const numCards = hand.length;
-    const cardWidth = 36; // Base width, should ideally match CSS
-    const overlapFactor = 0.8; // Reduced from ~0.4-0.5 to increase spacing
+    // Responsive card width based on screen size
+    let cardWidth, overlapFactor;
+    
+    // Determine card width and overlap based on screen size
+    if (window.innerWidth >= 1200) {
+      // Large screens
+      cardWidth = 50;
+      overlapFactor = 0.7;
+    } else if (window.innerWidth <= 480) {
+      // Mobile - with extreme overlap
+      if (isHuman) {
+        cardWidth = 60; // Much larger for human player on mobile
+        overlapFactor = 0.3; // Extreme overlap for human player (was 0.6)
+      } else {
+        cardWidth = 30; // Normal size for AI players
+        overlapFactor = 0.25; // Extreme overlap for AI players (was 0.5)
+      }
+    } else {
+      // Tablets and medium screens
+      cardWidth = 40;
+      overlapFactor = 0.7;
+    }
 
     return hand.map((card, index) => {
       const isSelected = !isHuman ? false : selectedCards && selectedCards.some(selCard => selCard.id === card.id);
 
+      const numCards = hand.length;
       const centerIndex = (numCards - 1) / 2;
       const xOffset = (index - centerIndex) * (cardWidth * overlapFactor);
 
@@ -41,31 +72,32 @@ const Player = (props) => {
         transformOrigin: 'bottom center',
         zIndex: index,
         transform: `
-          translateX(${xOffset - (cardWidth / 2)}px) /* Adjust X based on center */
-          ${isSelected ? 'translateY(-10px)' : ''}`, // Reduced lift for smaller cards
+          translateX(${xOffset - (cardWidth / 2)}px)
+          ${isSelected ? 'translateY(-10px)' : ''}`,
         transition: 'transform 0.2s ease-out',
-        // *** REMOVED fixed height/width - Let CSS control card size ***
-        // height: '50px', // REMOVED
-        // width: `${cardWidth}px`, // REMOVED - CSS will handle this via .playing-card/.robotcard
       };
 
       // Inner card style (takes full size of container)
       const cardInnerStyle = {
-          height: '100%', // Takes height from CSS applied to parent
-          width: '100%',  // Takes width from CSS applied to parent
-          pointerEvents: 'auto',
+        height: '100%', // Takes height from CSS applied to parent
+        width: '100%',  // Takes width from CSS applied to parent
+        pointerEvents: 'auto',
       };
-
 
       if (!isHuman) {
         return (
           // Apply style to the container div which now relies on CSS for sizing
-          <div key={card.id || `hidden-${index}`} style={cardContainerStyle} className="abscard">
+          <div 
+            key={card.id || `hidden-${index}`} 
+            style={cardContainerStyle} 
+            className="abscard"
+          >
             <div style={cardInnerStyle}>
-                <HiddenCard
-                  cardData={card}
-                  applyFoldedClassname={false}
-                />
+              {/* Always show hidden cards for opponents, never their actual cards */}
+              <HiddenCard
+                cardData={card}
+                applyFoldedClassname={false}
+              />
             </div>
           </div>
         );
@@ -73,13 +105,13 @@ const Player = (props) => {
         return (
           // Apply style to the container div which now relies on CSS for sizing
           <div key={card.id} style={cardContainerStyle} className="abscard">
-             <div style={cardInnerStyle}>
-                <Card
-                  cardData={card}
-                  isSelected={isSelected}
-                  onClick={() => onCardClick(card)}
-                  applyFoldedClassname={false}
-                />
+            <div style={cardInnerStyle}>
+              <Card
+                cardData={card}
+                isSelected={isSelected}
+                onClick={() => onCardClick(card)}
+                applyFoldedClassname={false}
+              />
             </div>
           </div>
         );
@@ -114,12 +146,13 @@ const Player = (props) => {
           />}
           <h5 className={`player-info--name${currentNameClass}`}>
             {name} {player.isHuman ? '(You)' : ''} {player.role ? `(${player.role})` : ''}
+            {!isHuman && showOpponentCards && <span className="debug-indicator"> [Cards Visible]</span>}
           </h5>
           <div className="player-info--card-count">
             Cards: {hand ? hand.length : 0}
           </div>
-           {player.finishedRank && <span className="player-info--rank">Rank: {player.finishedRank}</span>}
-           {!player.finishedRank && <span className="player-info--status">{getPlayerStatusText()}</span>}
+          {player.finishedRank && <span className="player-info--rank">Rank: {player.finishedRank}</span>}
+          {!player.finishedRank && <span className="player-info--status">{getPlayerStatusText()}</span>}
         </div>
         {playerAnimationSwitchboard && endTransition &&
           <PlayerStatusNotificationBox

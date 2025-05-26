@@ -1,6 +1,6 @@
 import React from 'react';
 
-const GameControls = ({ onPlayClick, onPassClick, canPlay, canPass, playText = "Play Selected" }) => {
+const GameControls = ({ onPlayClick, onPassClick, canPlay, canPass, playText = "Play Selected", onStopClick }) => {
   return (
     <div className="game-controls">
       <button

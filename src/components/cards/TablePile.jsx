@@ -7,26 +7,47 @@ const TablePile = memo(({ cardsOnTable }) => {
     return <div className="table-pile-container empty-pile"></div>;
   }
 
-  // Simple stacking display for now
+  // Calculate a reasonable overlap based on number of cards and screen size
+  const calculateOffset = (index, total) => {
+    let baseOffset;
+    
+    // Adjust spacing based on screen size
+    if (window.innerWidth >= 1200) {
+      // Large screens - more spacing
+      baseOffset = total <= 3 ? 45 : 35;
+    } else if (window.innerWidth <= 480) {
+      // Mobile - slightly more spacing for better visibility
+      baseOffset = total <= 3 ? 25 : 18; // Increased from 20/15
+    } else {
+      // Tablets - medium spacing
+      baseOffset = total <= 3 ? 35 : 25;
+    }
+    
+    // Center the cards by calculating the starting position
+    const startPosition = -(total - 1) * baseOffset / 2;
+    // Return the position for this specific card
+    return startPosition + (index * baseOffset);
+  };
+
   return (
     <div className="table-pile-container">
       {cardsOnTable.map((card, index) => (
         <div
-          key={`table-${card.id}-${index}`} // Use unique card ID
+          key={`table-${card.id}-${index}`}
           className="table-card-wrapper"
           style={{
             position: 'absolute',
-            left: `${(index * 25) - 50}px`, // Adjust overlap amount
+            left: '50%',
+            transform: `translateX(${calculateOffset(index, cardsOnTable.length)}px)`,
             zIndex: index,
-            transition: 'all 0.2s ease-in-out', // Smooth transition
-            willChange: 'transform, opacity', // Performance hint
-            backfaceVisibility: 'hidden', // Prevent flashing
-            transform: 'translateZ(0)', // Force GPU acceleration
+            transition: 'all 0.2s ease-in-out',
+            willChange: 'transform, opacity',
+            backfaceVisibility: 'hidden'
           }}
         >
           <Card
             cardData={card}
-            isSelected={false} // Cards on table are not selectable
+            isSelected={false}
             applyFoldedClassname={false}
           />
         </div>
