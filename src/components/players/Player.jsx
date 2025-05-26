@@ -91,31 +91,41 @@ const Player = (props) => {
             key={card.id || `hidden-${index}`} 
             style={cardContainerStyle} 
             className="abscard"
+            onClick={toggleOpponentCards}
           >
             <div style={cardInnerStyle}>
-              {/* Always show hidden cards for opponents, never their actual cards */}
-              <HiddenCard
-                cardData={card}
-                applyFoldedClassname={false}
-              />
-            </div>
-          </div>
-        );
-      } else {
-        return (
-          // Apply style to the container div which now relies on CSS for sizing
-          <div key={card.id} style={cardContainerStyle} className="abscard">
-            <div style={cardInnerStyle}>
-              <Card
-                cardData={card}
-                isSelected={isSelected}
-                onClick={() => onCardClick(card)}
-                applyFoldedClassname={false}
-              />
+              {/* Show actual cards if showOpponentCards is true, otherwise show hidden cards */}
+              {showOpponentCards ? (
+                <Card
+                  cardData={card}
+                  isSelected={false}
+                  onClick={() => {}}
+                  applyFoldedClassname={false}
+                />
+              ) : (
+                <HiddenCard
+                  cardData={card}
+                  applyFoldedClassname={false}
+                />
+              )}
             </div>
           </div>
         );
       }
+      
+      return (
+        // Apply style to the container div which now relies on CSS for sizing
+        <div key={card.id} style={cardContainerStyle} className="abscard">
+          <div style={cardInnerStyle}>
+            <Card
+              cardData={card}
+              isSelected={isSelected}
+              onClick={() => onCardClick(card)}
+              applyFoldedClassname={false}
+            />
+          </div>
+        </div>
+      );
     });
   };
 
